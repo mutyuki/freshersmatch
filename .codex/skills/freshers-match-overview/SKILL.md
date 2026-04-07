@@ -50,6 +50,7 @@ For implementation slicing, load:
 - TypeScript strict mode
 - Supabase + PostgreSQL
 - Supabase Realtime for live updates
+- Biome as the only formatter and linter
 - Thin API routes
 - Service layer owns mutations
 - Domain layer owns pure rules
@@ -75,3 +76,13 @@ Answer these quickly:
 4. Which tests should be added first?
 
 If any answer is unclear, read the relevant task doc before editing.
+
+## Before You Finish A Task
+
+Run at least:
+
+1. `pnpm format`
+2. `pnpm lint`
+3. `pnpm typecheck`
+
+If the task affects tested logic, also run the relevant tests.

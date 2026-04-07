@@ -39,6 +39,22 @@
 6. エラーは `AppError` 系に寄せる
 7. 重要なドメインロジックは先に Vitest を書く
 8. UIは `shadcn/ui` の既存コンポーネントを組み合わせる
+9. formatter / linter は Biome を唯一の基準とする
+
+## 4.5 タスク完了時の必須コマンド
+
+各タスク完了時、最低限以下を実行する。
+
+1. `pnpm format`
+2. `pnpm lint`
+3. `pnpm typecheck`
+
+テスト対象を含む変更では、さらに以下を実行する。
+
+1. unit / integration を触った場合: `pnpm test`
+2. E2E を触った場合: `pnpm test:e2e`
+
+PR前または大きな節目では、可能なら `pnpm build` まで確認する。
 
 ## 5. 命名ルール
 

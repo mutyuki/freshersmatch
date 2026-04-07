@@ -74,6 +74,19 @@ Use this when adding or changing tests.
 - assert both HTTP response and persisted state for API tests
 - treat race-sensitive flows as first-class tests, not optional polish
 
+## Finish Checklist
+
+After a testing-related task, run:
+
+1. `pnpm format`
+2. `pnpm lint`
+3. `pnpm typecheck`
+4. `pnpm test`
+
+If browser flows changed, also run:
+
+1. `pnpm test:e2e`
+
 ## Definition of Done
 
 A testing task is not done until:

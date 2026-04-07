@@ -17,6 +17,7 @@
   - ドメインロジック: Vitest
   - API / 状態遷移: Vitest + integration tests
   - E2E最小限: Playwright
+- formatter / linter: Biome
 
 ### なぜ1週間MVPに向いているか
 
@@ -25,6 +26,7 @@
 3. TypeScript で状態型を厳格化でき、AI実装時の曖昧さを減らせる
 4. shadcn/ui により UI を自作しすぎず、スマホ画面中心のMVPを早く組める
 5. Route Handlers / Server Actions で API と画面を近い場所に置けるため、AIに分割指示しやすい
+6. Biome を formatter / linter の単一系として使うことで、設定が軽く、AI実装時の整形ルールも揃えやすい
 
 ### 採用しない方がよいもの
 
@@ -32,6 +34,8 @@
 - フロントとバックエンドの別リポジトリ分割
 - 独自WebSocketサーバー
 - Redux など大きなクライアント状態管理
+- ESLint と Prettier の二重運用
+- Supabase 初回投入は [`docs/setup/supabase-bootstrap.md`](/Users/kitamurareiki/develop/match/docs/setup/supabase-bootstrap.md) の手順で固定する
 
 ## 1.5 レイアウト実装方針
 
@@ -291,6 +295,19 @@ AIに実装させる前提で、ドメインロジックから先にテストを
 3. state 変更は service 層を必ず通す
 4. 1エンドポイント1ユースケースにする
 5. 画面側は `participant.status` に応じて表示分岐する
+
+## 6.5 実装完了時の共通チェック
+
+各タスク完了時、最低限以下を実行する。
+
+1. `pnpm format`
+2. `pnpm lint`
+3. `pnpm typecheck`
+
+変更がテスト対象を含む場合は、加えて該当テストも実行する。
+
+1. unit のみなら `pnpm test`
+2. E2E を触ったなら `pnpm test:e2e`
 
 ## 7. まず最初に作るべきタスク一覧
 
