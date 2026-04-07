@@ -1,0 +1,8 @@
+interface:
+  display_name: "Freshers Match Testing"
+  short_description: "TDD and regression coverage for the app"
+  brand_color: "#5A534D"
+  default_prompt: "Use $freshers-match-testing to add unit, integration, or E2E tests that lock down the event app's critical behavior."
+
+policy:
+  allow_implicit_invocation: true

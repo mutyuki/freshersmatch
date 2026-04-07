@@ -1,0 +1,8 @@
+interface:
+  display_name: "Freshers Match DB/API"
+  short_description: "Schema, services, routes, and validators"
+  brand_color: "#9E5E40"
+  default_prompt: "Use $freshers-match-db-api to implement or modify schema, service-layer mutations, route handlers, or validation safely."
+
+policy:
+  allow_implicit_invocation: true

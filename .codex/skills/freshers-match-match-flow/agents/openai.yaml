@@ -1,0 +1,8 @@
+interface:
+  display_name: "Freshers Match Match Flow"
+  short_description: "Match lifecycle, state, and realtime rules"
+  brand_color: "#9E5E40"
+  default_prompt: "Use $freshers-match-match-flow to implement matching, state transitions, chip logic, or realtime update behavior."
+
+policy:
+  allow_implicit_invocation: true

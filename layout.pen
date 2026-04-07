@@ -1,0 +1,2318 @@
+{
+  "version": "2.9",
+  "children": [
+    {
+      "type": "frame",
+      "id": "OFRsi",
+      "x": 80,
+      "y": 80,
+      "name": "Participant / Join",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "ellipse",
+          "id": "lLcFL",
+          "x": 244,
+          "y": -28,
+          "opacity": 0.35,
+          "fill": "#E7C8B4",
+          "width": 180,
+          "height": 180
+        },
+        {
+          "type": "frame",
+          "id": "kjie6",
+          "x": 16,
+          "y": 18,
+          "name": "joinWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "cWn0j",
+              "type": "ref",
+              "ref": "1xlXq",
+              "height": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "ur71E": {
+                  "content": "ENTRY DESK"
+                },
+                "QuJQY": {
+                  "content": "Join tonight's card loop"
+                },
+                "PHXvr": {
+                  "content": "Scan, enter your venue code, pick a nickname, and step into the rotation.",
+                  "y": 136
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "IZLzt",
+              "name": "joinCode",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 10,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tjA9B",
+                  "fill": "$foreground.secondary",
+                  "content": "Venue code",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "9kini",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "#F6F0E8",
+                  "cornerRadius": 16,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "e7ZaH",
+                      "fill": "$foreground.primary",
+                      "content": "A12B",
+                      "fontFamily": "Geist",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "3VxxN",
+              "name": "joinNick",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 10,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "CNhOw",
+                  "fill": "$foreground.secondary",
+                  "content": "Nickname",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "RByST",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "#F6F0E8",
+                  "cornerRadius": 16,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "W0Ovk",
+                      "fill": "$foreground.primary",
+                      "content": "reiki",
+                      "fontFamily": "Geist",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "Xoz3e",
+              "type": "ref",
+              "ref": "6WcoP",
+              "x": 0,
+              "y": 544,
+              "descendants": {
+                "q9epd": {
+                  "content": "Join the event",
+                  "x": 119.5
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "QIo0F",
+              "fill": "$foreground.secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Nicknames are unique. Logging in on a new device will replace your old session.",
+              "lineHeight": 1.5,
+              "fontFamily": "Geist",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "1FgTy",
+      "x": 550,
+      "y": 80,
+      "name": "Participant / Home",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "ellipse",
+          "id": "rEmQu",
+          "x": -34,
+          "y": 612,
+          "opacity": 0.22,
+          "fill": "#E7C8B4",
+          "width": 170,
+          "height": 170
+        },
+        {
+          "type": "frame",
+          "id": "iDvwz",
+          "x": 16,
+          "y": 18,
+          "name": "homeWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "l7hlO",
+              "type": "ref",
+              "ref": "GSK0S",
+              "width": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "upVwP": {
+                  "content": "REGISTERED"
+                }
+              }
+            },
+            {
+              "id": "msh1j",
+              "type": "ref",
+              "ref": "1xlXq",
+              "height": "fit_content",
+              "x": 0,
+              "y": 92,
+              "descendants": {
+                "ur71E": {
+                  "content": "YOUR CORNER"
+                },
+                "QuJQY": {
+                  "content": "Ready when you are"
+                },
+                "PHXvr": {
+                  "content": "Check your official stack, then enter the next random match when you have a few free minutes."
+                }
+              }
+            },
+            {
+              "id": "5LFGk",
+              "type": "ref",
+              "ref": "qS1k9",
+              "height": "fit_content",
+              "x": 0,
+              "y": 296,
+              "descendants": {
+                "REBS3": {
+                  "content": "Official chips"
+                },
+                "U3zu4": {
+                  "content": "1,280"
+                },
+                "w2zvO": {
+                  "content": "Ranking is determined by digital chips only. The table chips are theatrical."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "gdw2n",
+              "name": "nextCard",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ODQiV",
+                  "fill": "$foreground.secondary",
+                  "content": "Current note",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "SXCpR",
+                  "fill": "$foreground.primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "No current table assignment. Press start when you're ready to be sent to any open table.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Geist",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "7gGSP",
+              "type": "ref",
+              "ref": "6WcoP",
+              "x": 0,
+              "y": 596,
+              "descendants": {
+                "q9epd": {
+                  "content": "Start matching",
+                  "x": 117
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "roGNp",
+              "fill": "$foreground.secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "You can leave the waiting queue anytime before a match is fixed.",
+              "lineHeight": 1.5,
+              "fontFamily": "Geist",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "b4JNz",
+      "x": 1020,
+      "y": 80,
+      "name": "Participant / Queue",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "ellipse",
+          "id": "5eZxd",
+          "x": 252,
+          "y": 628,
+          "opacity": 0.18,
+          "fill": "#D4916E",
+          "width": 150,
+          "height": 150
+        },
+        {
+          "type": "frame",
+          "id": "aQ5cm",
+          "x": 16,
+          "y": 18,
+          "name": "queueWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "oKc1X",
+              "type": "ref",
+              "ref": "GSK0S",
+              "width": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "upVwP": {
+                  "content": "QUEUEING"
+                }
+              }
+            },
+            {
+              "id": "y3DWq",
+              "type": "ref",
+              "ref": "1xlXq",
+              "height": "fit_content",
+              "x": 0,
+              "y": 94,
+              "descendants": {
+                "ur71E": {
+                  "content": "MATCHMAKER"
+                },
+                "QuJQY": {
+                  "content": "Finding your next table"
+                },
+                "PHXvr": {
+                  "content": "Human opponents come first. If the room is sparse for a while, staff can pull you into a manual match.",
+                  "y": 136
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "9hCrI",
+              "name": "waitCard",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Mn8T2",
+                  "fill": "$foreground.secondary",
+                  "content": "WAIT TIME",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.1
+                },
+                {
+                  "type": "text",
+                  "id": "8Fuyi",
+                  "fill": "$foreground.primary",
+                  "content": "00:48",
+                  "lineHeight": 1,
+                  "fontFamily": "Newsreader",
+                  "fontSize": 54,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "ABfSf",
+                  "fill": "$foreground.secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "We are avoiding only the last opponent when possible. Otherwise the room keeps moving.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "A8ftM",
+              "type": "ref",
+              "ref": "Lw5p1",
+              "x": 0,
+              "y": 536,
+              "descendants": {
+                "UWoBb": {
+                  "content": "Leave queue",
+                  "x": 125.5
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "fVObU",
+              "fill": "$foreground.secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Stay nearby. Your screen will switch to a table assignment as soon as the match locks in.",
+              "lineHeight": 1.5,
+              "fontFamily": "Geist",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "PqAcf",
+      "x": 1490,
+      "y": 80,
+      "name": "Participant / Match Reserved",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "akaNY",
+          "x": 16,
+          "y": 18,
+          "name": "reservedWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "NbxwN",
+              "type": "ref",
+              "ref": "GSK0S",
+              "width": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "upVwP": {
+                  "content": "MATCH LOCKED"
+                }
+              }
+            },
+            {
+              "id": "K1jzf",
+              "type": "ref",
+              "ref": "1xlXq",
+              "height": "fit_content",
+              "x": 0,
+              "y": 92,
+              "descendants": {
+                "ur71E": {
+                  "content": "TABLE ASSIGNMENT"
+                },
+                "QuJQY": {
+                  "content": "Table 3 is waiting"
+                },
+                "PHXvr": {
+                  "content": "Move now. Once both players confirm they are at the table, the fixed bet will be taken instantly."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "09Wyx",
+              "name": "matchCard",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 22,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ERaTZ",
+                  "fill": "$foreground.primary",
+                  "content": "Opponent: Mikan",
+                  "fontFamily": "Geist",
+                  "fontSize": 17,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "rnDU8",
+                  "fill": "$accent.deep",
+                  "content": "Table 3 / High card sprint",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "dJFmV",
+                  "fill": "$foreground.secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Fixed bet is applied only after both players press start. Cancellation is still available before that point.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "BoUkO",
+              "type": "ref",
+              "ref": "6WcoP",
+              "x": 0,
+              "y": 480,
+              "descendants": {
+                "q9epd": {
+                  "content": "I'm at the table",
+                  "x": 117
+                }
+              }
+            },
+            {
+              "id": "B2qUD",
+              "type": "ref",
+              "ref": "Lw5p1",
+              "x": 0,
+              "y": 554,
+              "descendants": {
+                "UWoBb": {
+                  "content": "Cancel before start",
+                  "x": 101.5
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "FVWRy",
+      "x": 1960,
+      "y": 80,
+      "name": "Participant / In Progress",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "AXU8n",
+          "x": 16,
+          "y": 18,
+          "name": "playWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "x4jt5",
+              "type": "ref",
+              "ref": "GSK0S",
+              "fill": "$success.soft",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "upVwP": {
+                  "content": "IN PLAY"
+                }
+              }
+            },
+            {
+              "id": "YJubm",
+              "type": "ref",
+              "ref": "1xlXq",
+              "height": "fit_content",
+              "x": 0,
+              "y": 92,
+              "descendants": {
+                "ur71E": {
+                  "content": "LIVE TABLE"
+                },
+                "QuJQY": {
+                  "content": "Play it out clean"
+                },
+                "PHXvr": {
+                  "content": "The app is only tracking the official result and chip movement. The game itself stays completely on the table."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "bkGat",
+              "name": "playCard",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 22,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bgPZt",
+                  "fill": "$accent.deep",
+                  "content": "Table 2 / Red-black duel",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "QLpts",
+                  "fill": "$foreground.primary",
+                  "content": "Bet locked at 120 chips",
+                  "fontFamily": "Newsreader",
+                  "fontSize": 34,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "xvkKz",
+                  "fill": "$foreground.secondary",
+                  "content": "Opponent: Sora",
+                  "fontFamily": "Geist",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "MUrRn",
+              "type": "ref",
+              "ref": "6WcoP",
+              "x": 0,
+              "y": 451,
+              "descendants": {
+                "q9epd": {
+                  "content": "I won",
+                  "x": 152
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "tvLYR",
+      "x": 80,
+      "y": 1010,
+      "name": "Participant / Claim Waiting",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "nzg4L",
+          "x": 16,
+          "y": 18,
+          "name": "claimWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "YSxGQ",
+              "type": "ref",
+              "ref": "GSK0S",
+              "fill": "$info.soft",
+              "width": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "upVwP": {
+                  "content": "CLAIM SENT"
+                }
+              }
+            },
+            {
+              "id": "8XFqh",
+              "type": "ref",
+              "ref": "1xlXq",
+              "x": 0,
+              "y": 92,
+              "descendants": {
+                "ur71E": {
+                  "content": "RESULT CHECK"
+                },
+                "QuJQY": {
+                  "content": "Waiting for approval"
+                },
+                "PHXvr": {
+                  "content": "Your opponent is reviewing your win claim. Keep the table free until the screen changes."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "TtASi",
+              "name": "claimCard",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 22,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "CmmAT",
+                  "fill": "$foreground.secondary",
+                  "content": "Submitted result",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "3BadN",
+                  "fill": "$foreground.primary",
+                  "content": "You reported a win on Table 2",
+                  "fontFamily": "Newsreader",
+                  "fontSize": 32,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "z5Gkn",
+                  "fill": "$foreground.secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "If the opponent disagrees, this screen will return to the live match state instead of forcing an admin flow.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ajY7d",
+      "x": 550,
+      "y": 1010,
+      "name": "Participant / Result Approval",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "4Tw9x",
+          "x": 16,
+          "y": 18,
+          "name": "approvalWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "6XKw3",
+              "type": "ref",
+              "ref": "GSK0S",
+              "fill": "$danger.soft",
+              "width": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "upVwP": {
+                  "content": "CHECK RESULT"
+                }
+              }
+            },
+            {
+              "id": "vlzRm",
+              "type": "ref",
+              "ref": "1xlXq",
+              "x": 0,
+              "y": 92,
+              "descendants": {
+                "ur71E": {
+                  "content": "OPPONENT CLAIM"
+                },
+                "QuJQY": {
+                  "content": "Sora says they won"
+                },
+                "PHXvr": {
+                  "content": "Approve only if the table result is correct. If not, reject and the match returns to live play."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "d1vfS",
+              "name": "approvalCard",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 22,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "5UPaL",
+                  "fill": "$accent.deep",
+                  "content": "Table 2 / Red-black duel",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "GWRm7",
+                  "fill": "$foreground.primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Please confirm the winner honestly.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Geist",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "yrf17",
+              "type": "ref",
+              "ref": "6WcoP",
+              "x": 0,
+              "y": 386,
+              "descendants": {
+                "q9epd": {
+                  "content": "Approve result",
+                  "x": 118
+                }
+              }
+            },
+            {
+              "id": "xAnjd",
+              "type": "ref",
+              "ref": "Lw5p1",
+              "x": 0,
+              "y": 460,
+              "descendants": {
+                "UWoBb": {
+                  "content": "Reject and continue match",
+                  "x": 75
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "tAU3a",
+      "x": 1020,
+      "y": 1010,
+      "name": "Participant / Result Confirmed",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Oqh40",
+          "x": 16,
+          "y": 18,
+          "name": "resultWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "63sii",
+              "type": "ref",
+              "ref": "GSK0S",
+              "fill": "$success.soft",
+              "width": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "upVwP": {
+                  "content": "RESULT FIXED"
+                }
+              }
+            },
+            {
+              "id": "jmkGD",
+              "type": "ref",
+              "ref": "1xlXq",
+              "height": "fit_content",
+              "x": 0,
+              "y": 92,
+              "descendants": {
+                "ur71E": {
+                  "content": "ROUND CLOSED"
+                },
+                "QuJQY": {
+                  "content": "+240 chips added"
+                },
+                "PHXvr": {
+                  "content": "The table is now released and the live ranking has updated. You can jump back in whenever you want."
+                }
+              }
+            },
+            {
+              "id": "glUws",
+              "type": "ref",
+              "ref": "qS1k9",
+              "height": "fit_content",
+              "x": 0,
+              "y": 296,
+              "descendants": {
+                "REBS3": {
+                  "content": "New total"
+                },
+                "U3zu4": {
+                  "content": "1,520"
+                },
+                "w2zvO": {
+                  "content": "A clean confirmation gives the room its pace. Your digital total is now reflected on the ranking board."
+                }
+              }
+            },
+            {
+              "id": "zk8F9",
+              "type": "ref",
+              "ref": "6WcoP",
+              "x": 0,
+              "y": 488,
+              "descendants": {
+                "q9epd": {
+                  "content": "Start another match",
+                  "x": 98
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "lablm",
+      "x": 1490,
+      "y": 1010,
+      "name": "Participant / Ranking",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "xrpCv",
+          "x": 16,
+          "y": 18,
+          "name": "rankWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            44,
+            0,
+            24,
+            0
+          ],
+          "children": [
+            {
+              "id": "tSqpL",
+              "type": "ref",
+              "ref": "1xlXq",
+              "height": "fit_content",
+              "x": 0,
+              "y": 44,
+              "descendants": {
+                "ur71E": {
+                  "content": "LIVE BOARD"
+                },
+                "QuJQY": {
+                  "content": "Tonight's ranking"
+                },
+                "PHXvr": {
+                  "content": "Total chip balance decides the order. Disqualified players remain visible but clearly marked."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "JhoDQ",
+              "name": "rankList",
+              "width": "fill_container",
+              "fill": "$surface.elevated",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 10,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0bagj",
+                  "fill": "$foreground.primary",
+                  "content": "1. Mikan  1860",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "O4Ku2",
+                  "fill": "$accent.deep",
+                  "content": "2. Reiki  1520",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "RpaVl",
+                  "fill": "$foreground.primary",
+                  "content": "3. Sora   1340",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "dqHOS",
+                  "fill": "$foreground.primary",
+                  "content": "4. Yuzu   980",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "MhE9J",
+              "type": "ref",
+              "ref": "6WcoP",
+              "x": 0,
+              "y": 396,
+              "descendants": {
+                "q9epd": {
+                  "content": "Back to home",
+                  "x": 121.5
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "oBOq7",
+      "x": 1960,
+      "y": 1010,
+      "name": "Participant / Reconnect",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$surface.primary",
+      "cornerRadius": "$radius.lg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "IJXRM",
+          "x": 16,
+          "y": 18,
+          "name": "reconnectWrap",
+          "width": 358,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            140,
+            0,
+            24,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "ellipse",
+              "id": "xBwvu",
+              "opacity": 0.4,
+              "fill": "#E7C8B4",
+              "width": 96,
+              "height": 96
+            },
+            {
+              "type": "text",
+              "id": "Qrvxw",
+              "fill": "$foreground.primary",
+              "content": "Reconnecting",
+              "fontFamily": "Newsreader",
+              "fontSize": 38,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "moC1r",
+              "fill": "$foreground.secondary",
+              "textGrowth": "fixed-width",
+              "width": 300,
+              "content": "We are fetching your current state so you can return to the right screen instead of starting over.",
+              "lineHeight": 1.5,
+              "textAlign": "center",
+              "fontFamily": "Geist",
+              "fontSize": 15,
+              "fontWeight": "normal"
+            },
+            {
+              "id": "RlR6e",
+              "type": "ref",
+              "ref": "Lw5p1",
+              "x": 8,
+              "y": 403,
+              "descendants": {
+                "UWoBb": {
+                  "content": "Try again",
+                  "x": 138
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "42dhM",
+      "x": 80,
+      "y": 2000,
+      "name": "Admin / Login",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$surface.primary",
+      "cornerRadius": 24,
+      "layout": "none",
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "7uKWm",
+          "x": 0,
+          "y": 0,
+          "fill": "$surface.inverse",
+          "width": 1440,
+          "height": 260
+        },
+        {
+          "type": "frame",
+          "id": "PMeGE",
+          "x": 120,
+          "y": 120,
+          "name": "loginWrap",
+          "width": 1200,
+          "gap": 80,
+          "children": [
+            {
+              "type": "frame",
+              "id": "GpxUV",
+              "name": "loginLeft",
+              "width": 520,
+              "layout": "vertical",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "UGSjO",
+                  "fill": "$accent.primary",
+                  "content": "ROOM CONTROL",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "text",
+                  "id": "aULZA",
+                  "fill": "$foreground.inverse",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Operator access for the whole room.",
+                  "lineHeight": 1.02,
+                  "fontFamily": "Newsreader",
+                  "fontSize": 58,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "Y2RMW",
+                  "fill": "#F3EBE2",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Use this screen on a laptop at the entrance desk. From here, staff can free tables, repair match states, and manually run staff matches.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "Geist",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oNBsa",
+              "name": "loginCard",
+              "width": 420,
+              "fill": "$surface.elevated",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 28,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "FFFqn",
+                  "fill": "$foreground.primary",
+                  "content": "Admin passcode",
+                  "fontFamily": "Geist",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "jdgez",
+                  "width": "fill_container",
+                  "height": 58,
+                  "fill": "#F6F0E8",
+                  "cornerRadius": 16
+                },
+                {
+                  "id": "6zNWj",
+                  "type": "ref",
+                  "ref": "6WcoP",
+                  "x": 28,
+                  "y": 141,
+                  "descendants": {
+                    "q9epd": {
+                      "content": "Enter dashboard",
+                      "x": 111.5
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "uyvAs",
+      "x": 80,
+      "y": 3104,
+      "name": "Admin / Dashboard",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$surface.primary",
+      "cornerRadius": 24,
+      "layout": "none",
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "HmkiC",
+          "x": 0,
+          "y": 0,
+          "fill": "$surface.inverse",
+          "width": 1440,
+          "height": 180
+        },
+        {
+          "type": "frame",
+          "id": "acwsY",
+          "x": 48,
+          "y": 40,
+          "name": "dashWrap",
+          "width": 1344,
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "jGl8t",
+              "fill": "$foreground.inverse",
+              "content": "Event control room",
+              "fontFamily": "Newsreader",
+              "fontSize": 44,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "vyMi7",
+              "name": "statRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "mgQG8",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 430,
+                  "x": 0,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Open tables"
+                    },
+                    "fe2Lt": {
+                      "content": "LIVE"
+                    },
+                    "evaY8": {
+                      "width": "fill_container"
+                    },
+                    "Is9EY": {
+                      "content": "2 tables are currently available for new assignments."
+                    }
+                  }
+                },
+                {
+                  "id": "ewt2t",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 430,
+                  "x": 446,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Queue"
+                    },
+                    "fe2Lt": {
+                      "content": "PENDING"
+                    },
+                    "evaY8": {
+                      "width": "fill_container"
+                    },
+                    "Is9EY": {
+                      "content": "6 participants are waiting for the next seat."
+                    }
+                  }
+                },
+                {
+                  "id": "6nBDf",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 468,
+                  "x": 892,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Stuck cases"
+                    },
+                    "fe2Lt": {
+                      "content": "WATCH"
+                    },
+                    "evaY8": {
+                      "width": "fill_container"
+                    },
+                    "Is9EY": {
+                      "content": "1 match is waiting for admin attention."
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zAMRd",
+              "name": "panelRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "2AMFa",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 430,
+                  "height": "fit_content",
+                  "x": 0,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Tables"
+                    },
+                    "fe2Lt": {
+                      "content": "1-5"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Table 1: in use\nTable 2: in use\nTable 3: reserved\nTable 4: available\nTable 5: available"
+                    }
+                  }
+                },
+                {
+                  "id": "p3yNp",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 430,
+                  "height": "fit_content",
+                  "x": 446,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Queueing participants"
+                    },
+                    "fe2Lt": {
+                      "content": "LIVE"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Reiki\nMikan\nSora\nYuzu\nNagi\nAoi"
+                    }
+                  }
+                },
+                {
+                  "id": "sbuMU",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 468,
+                  "height": "fit_content",
+                  "x": 892,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Matches in progress"
+                    },
+                    "fe2Lt": {
+                      "content": "ROOM"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Table 1: Mikan vs Yuzu\nTable 2: Sora vs Aoi\nTable 3: Reiki waiting for start"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "g46uC",
+      "x": 1600,
+      "y": 2000,
+      "name": "Admin / Participants",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$surface.primary",
+      "cornerRadius": 24,
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "lK0hF",
+          "x": 48,
+          "y": 40,
+          "name": "partWrap",
+          "width": 1344,
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "wdVPV",
+              "fill": "$foreground.primary",
+              "content": "Participants",
+              "fontFamily": "Newsreader",
+              "fontSize": 44,
+              "fontWeight": "500"
+            },
+            {
+              "id": "v8BCl",
+              "type": "ref",
+              "ref": "xaaLO",
+              "width": 1344,
+              "height": "fit_content",
+              "x": 0,
+              "y": 68,
+              "descendants": {
+                "Hsh4g": {
+                  "content": "Roster and actions"
+                },
+                "fe2Lt": {
+                  "content": "ADMIN"
+                },
+                "evaY8": {
+                  "width": "fill_container",
+                  "height": "fit_content"
+                },
+                "Is9EY": {
+                  "content": "Reiki   1520   active\nMikan   1860   active\nSora    1340   paused\nYuzu    980    active\nAoi     0      disqualified"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "4jTkc",
+      "x": 1600,
+      "y": 3104,
+      "name": "Admin / Matches",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$surface.primary",
+      "cornerRadius": 24,
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "JnAkB",
+          "x": 48,
+          "y": 40,
+          "name": "matchWrap",
+          "width": 1344,
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "TfEQ2",
+              "fill": "$foreground.primary",
+              "content": "Matches",
+              "fontFamily": "Newsreader",
+              "fontSize": 44,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "8J75M",
+              "name": "matchPanels",
+              "width": "fill_container",
+              "gap": 24,
+              "children": [
+                {
+                  "id": "6rcAs",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 660,
+                  "height": "fit_content",
+                  "x": 0,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Active and reserved"
+                    },
+                    "fe2Lt": {
+                      "content": "ROOM"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "#203  Table 1  in progress\n#204  Table 2  in progress\n#205  Table 3  reserved"
+                    }
+                  }
+                },
+                {
+                  "id": "S5OTk",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 660,
+                  "height": "fit_content",
+                  "x": 684,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Admin actions"
+                    },
+                    "fe2Lt": {
+                      "content": "TOOLS"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Force winner\nVoid match\nRelease table\nCorrect chip totals"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "KLN3M",
+      "x": 3120,
+      "y": 2000,
+      "name": "Admin / Tables",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$surface.primary",
+      "cornerRadius": 24,
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Fm852",
+          "x": 48,
+          "y": 40,
+          "name": "tablesWrap",
+          "width": 1344,
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "lOXAH",
+              "fill": "$foreground.primary",
+              "content": "Tables",
+              "fontFamily": "Newsreader",
+              "fontSize": 44,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "nKLU9",
+              "name": "tableRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "cQ73t",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 324,
+                  "height": "fit_content",
+                  "x": 0,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Table 1"
+                    },
+                    "fe2Lt": {
+                      "content": "IN USE"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Mikan vs Yuzu\nHigh card sprint"
+                    }
+                  }
+                },
+                {
+                  "id": "CLl9C",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 324,
+                  "height": "fit_content",
+                  "x": 340,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Table 2"
+                    },
+                    "fe2Lt": {
+                      "content": "IN USE"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Sora vs Aoi\nRed-black duel"
+                    }
+                  }
+                },
+                {
+                  "id": "rp8zg",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 324,
+                  "height": "fit_content",
+                  "x": 680,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Table 3"
+                    },
+                    "fe2Lt": {
+                      "content": "RESERVED"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Reiki vs Mikan\nFace-up war"
+                    }
+                  }
+                },
+                {
+                  "id": "WpoKw",
+                  "type": "ref",
+                  "ref": "xaaLO",
+                  "width": 324,
+                  "height": "fit_content",
+                  "x": 1020,
+                  "y": 0,
+                  "descendants": {
+                    "Hsh4g": {
+                      "content": "Table 4"
+                    },
+                    "fe2Lt": {
+                      "content": "AVAILABLE"
+                    },
+                    "evaY8": {
+                      "width": "fill_container",
+                      "height": "fit_content"
+                    },
+                    "Is9EY": {
+                      "content": "Open now\nReady for next match"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "vyoHE",
+      "x": 3120,
+      "y": 3104,
+      "name": "Monitor / Ranking",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$surface.primary",
+      "cornerRadius": 24,
+      "layout": "none",
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "TR1Za",
+          "x": 0,
+          "y": 0,
+          "fill": "$surface.inverse",
+          "width": 1440,
+          "height": 220
+        },
+        {
+          "type": "frame",
+          "id": "pnEEA",
+          "x": 60,
+          "y": 50,
+          "name": "monitorWrap",
+          "width": 1320,
+          "layout": "vertical",
+          "gap": 28,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "NLJYW",
+              "fill": "$foreground.inverse",
+              "content": "Freshers ranking board",
+              "fontFamily": "Newsreader",
+              "fontSize": 56,
+              "fontWeight": "500"
+            },
+            {
+              "id": "irU6V",
+              "type": "ref",
+              "ref": "xaaLO",
+              "width": 1120,
+              "height": "fit_content",
+              "x": 100,
+              "y": 84,
+              "descendants": {
+                "Hsh4g": {
+                  "content": "Top players"
+                },
+                "fe2Lt": {
+                  "content": "LIVE"
+                },
+                "evaY8": {
+                  "width": "fill_container",
+                  "height": "fit_content"
+                },
+                "Is9EY": {
+                  "content": "1  Mikan  1860\n2  Reiki  1520\n3  Sora   1340\n4  Yuzu   980\n5  Aoi    DQ"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "1xlXq",
+      "x": 4700,
+      "y": 80,
+      "name": "Component / Phone Header",
+      "reusable": true,
+      "width": 358,
+      "fill": "$surface.elevated",
+      "cornerRadius": 20,
+      "layout": "vertical",
+      "gap": 12,
+      "padding": [
+        24,
+        24,
+        20,
+        24
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "ur71E",
+          "name": "eyebrow",
+          "fill": "$accent.deep",
+          "content": "FRESHERS MATCH",
+          "fontFamily": "IBM Plex Mono",
+          "fontSize": 12,
+          "fontWeight": "500",
+          "letterSpacing": 1.2
+        },
+        {
+          "type": "text",
+          "id": "QuJQY",
+          "name": "title",
+          "fill": "$foreground.primary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Welcome to the floor",
+          "lineHeight": 1.05,
+          "fontFamily": "Newsreader",
+          "fontSize": 34,
+          "fontWeight": "500"
+        },
+        {
+          "type": "text",
+          "id": "PHXvr",
+          "name": "body",
+          "fill": "$foreground.secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "One clear instruction at a time. Move fast, meet people, and let the room keep flowing.",
+          "lineHeight": 1.45,
+          "fontFamily": "Geist",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "6WcoP",
+      "x": 4700,
+      "y": 360,
+      "name": "Component / Primary Button",
+      "reusable": true,
+      "width": 342,
+      "height": 56,
+      "fill": "$accent.primary",
+      "cornerRadius": 18,
+      "padding": [
+        0,
+        18
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "q9epd",
+          "name": "label",
+          "fill": "$foreground.inverse",
+          "content": "Continue",
+          "fontFamily": "Geist",
+          "fontSize": 15,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Lw5p1",
+      "x": 4700,
+      "y": 450,
+      "name": "Component / Secondary Button",
+      "reusable": true,
+      "width": 342,
+      "height": 56,
+      "fill": "$info.soft",
+      "cornerRadius": 18,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$border.subtle"
+      },
+      "padding": [
+        0,
+        18
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "UWoBb",
+          "name": "label",
+          "fill": "$foreground.primary",
+          "content": "Maybe later",
+          "fontFamily": "Geist",
+          "fontSize": 15,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "GSK0S",
+      "x": 4700,
+      "y": 550,
+      "name": "Component / Status Chip",
+      "reusable": true,
+      "fill": "$info.soft",
+      "cornerRadius": 999,
+      "padding": [
+        8,
+        12
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "upVwP",
+          "name": "label",
+          "fill": "$foreground.secondary",
+          "content": "WAITING",
+          "fontFamily": "IBM Plex Mono",
+          "fontSize": 11,
+          "fontWeight": "500",
+          "letterSpacing": 1
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "qS1k9",
+      "x": 4700,
+      "y": 650,
+      "name": "Component / Stat Card",
+      "reusable": true,
+      "width": 342,
+      "fill": "$surface.elevated",
+      "cornerRadius": 20,
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 20,
+      "children": [
+        {
+          "type": "text",
+          "id": "REBS3",
+          "name": "label",
+          "fill": "$foreground.secondary",
+          "content": "Your stack",
+          "fontFamily": "IBM Plex Mono",
+          "fontSize": 12,
+          "fontWeight": "normal",
+          "letterSpacing": 1.1
+        },
+        {
+          "type": "text",
+          "id": "U3zu4",
+          "name": "value",
+          "fill": "$foreground.primary",
+          "content": "1280",
+          "lineHeight": 1,
+          "fontFamily": "Newsreader",
+          "fontSize": 42,
+          "fontWeight": "500"
+        },
+        {
+          "type": "text",
+          "id": "w2zvO",
+          "name": "meta",
+          "fill": "$foreground.secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Stable enough for three full rounds.",
+          "lineHeight": 1.4,
+          "fontFamily": "Geist",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "xaaLO",
+      "x": 4700,
+      "y": 930,
+      "name": "Component / Admin Panel",
+      "reusable": true,
+      "width": 420,
+      "fill": "$surface.elevated",
+      "cornerRadius": 20,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$border.subtle"
+      },
+      "layout": "vertical",
+      "gap": 14,
+      "padding": 20,
+      "children": [
+        {
+          "type": "text",
+          "id": "Hsh4g",
+          "name": "title",
+          "fill": "$foreground.primary",
+          "content": "Table status",
+          "fontFamily": "Geist",
+          "fontSize": 18,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "fe2Lt",
+          "name": "meta",
+          "fill": "$foreground.secondary",
+          "content": "Live room snapshot",
+          "fontFamily": "IBM Plex Mono",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "letterSpacing": 1
+        },
+        {
+          "type": "frame",
+          "id": "evaY8",
+          "name": "slotBody",
+          "width": "fill_container",
+          "fill": "$surface.primary",
+          "cornerRadius": 14,
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "Is9EY",
+              "name": "adminBody",
+              "fill": "$foreground.secondary",
+              "content": "Rows, badges, and actions go here.",
+              "fontFamily": "Geist",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "accent.deep": {
+      "type": "color",
+      "value": "#9E5E40"
+    },
+    "accent.primary": {
+      "type": "color",
+      "value": "#D4916E"
+    },
+    "border.subtle": {
+      "type": "color",
+      "value": "#C5BEB6"
+    },
+    "danger.soft": {
+      "type": "color",
+      "value": "#EFD9D2"
+    },
+    "font.body": {
+      "type": "string",
+      "value": "Geist"
+    },
+    "font.caption": {
+      "type": "string",
+      "value": "IBM Plex Mono"
+    },
+    "font.heading": {
+      "type": "string",
+      "value": "Newsreader"
+    },
+    "foreground.inverse": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "foreground.primary": {
+      "type": "color",
+      "value": "#1A1A1A"
+    },
+    "foreground.secondary": {
+      "type": "color",
+      "value": "#5A534D"
+    },
+    "info.soft": {
+      "type": "color",
+      "value": "#E7E2DA"
+    },
+    "radius.lg": {
+      "type": "number",
+      "value": 28
+    },
+    "radius.md": {
+      "type": "number",
+      "value": 16
+    },
+    "radius.sm": {
+      "type": "number",
+      "value": 4
+    },
+    "space.1": {
+      "type": "number",
+      "value": 8
+    },
+    "space.2": {
+      "type": "number",
+      "value": 12
+    },
+    "space.3": {
+      "type": "number",
+      "value": 16
+    },
+    "space.4": {
+      "type": "number",
+      "value": 20
+    },
+    "space.5": {
+      "type": "number",
+      "value": 24
+    },
+    "space.6": {
+      "type": "number",
+      "value": 32
+    },
+    "success.soft": {
+      "type": "color",
+      "value": "#DCE8DA"
+    },
+    "surface.elevated": {
+      "type": "color",
+      "value": "#FBF7F2"
+    },
+    "surface.inverse": {
+      "type": "color",
+      "value": "#1A1A1A"
+    },
+    "surface.primary": {
+      "type": "color",
+      "value": "#F3EBE2"
+    }
+  }
+}

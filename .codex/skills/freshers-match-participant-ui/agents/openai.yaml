@@ -1,0 +1,8 @@
+interface:
+  display_name: "Freshers Match Participant UI"
+  short_description: "Smartphone-first participant web screens"
+  brand_color: "#D4916E"
+  default_prompt: "Use $freshers-match-participant-ui to build or refine the mobile participant screens using layout.pen as the baseline."
+
+policy:
+  allow_implicit_invocation: true
