@@ -6,12 +6,12 @@
 
 - フロントエンド: Next.js App Router + TypeScript
 - UI: shadcn/ui + Tailwind CSS
-- バックエンド: Next.js Route Handlers / Server Actions
+- バックエンド: Next.js Route Handlers（更新系・状態同期系すべて。Server Actions は使わない）
 - DB: PostgreSQL
 - BaaS: Supabase
-- リアルタイム: Supabase Realtime
+- 状態同期: Supabase Realtime Broadcast を標準とする
 - 認証代替:
-  - 参加者: 独自セッショントークン + httpOnly cookie または localStorage 保持トークン
+  - 参加者: 独自セッショントークンを localStorage に保存し、API は `Authorization: Bearer` で送る
   - 運営: パスコード + サーバーセッション
 - テスト:
   - ドメインロジック: Vitest
@@ -22,11 +22,12 @@
 ### なぜ1週間MVPに向いているか
 
 1. Next.js 1アプリで参加者画面・運営画面・ランキング画面を同居でき、構成が単純
-2. Supabase で PostgreSQL と Realtime をまとめて使え、リアルタイム実装の負担が小さい
+2. Supabase で PostgreSQL と Realtime Broadcast を一元管理でき、状態更新と即時反映を同じ基盤で閉じやすい
 3. TypeScript で状態型を厳格化でき、AI実装時の曖昧さを減らせる
 4. shadcn/ui により UI を自作しすぎず、スマホ画面中心のMVPを早く組める
-5. Route Handlers / Server Actions で API と画面を近い場所に置けるため、AIに分割指示しやすい
+5. Route Handlers で API と画面を近い場所に置けるため、AIに分割指示しやすい
 6. Biome を formatter / linter の単一系として使うことで、設定が軽く、AI実装時の整形ルールも揃えやすい
+7. 多表更新を PostgreSQL 関数 / RPC に寄せることで、複雑なトランザクションをアプリ層へ漏らさずに済む
 
 ### 採用しない方がよいもの
 
@@ -35,11 +36,17 @@
 - 独自WebSocketサーバー
 - Redux など大きなクライアント状態管理
 - ESLint と Prettier の二重運用
-- Supabase 初回投入は [`docs/setup/supabase-bootstrap.md`](/Users/kitamurareiki/develop/match/docs/setup/supabase-bootstrap.md) の手順で固定する
+- ブラウザから Supabase テーブル Row をそのまま正本として扱う構成
+
+### 実装上の固定事項
+
+- Supabase 初回投入は [`docs/setup/supabase-bootstrap.md`](../setup/supabase-bootstrap.md) の手順で固定する
+- 多表更新は PostgreSQL 関数 / RPC に寄せる
+- 状態同期は Realtime Broadcast + authenticated read API 再同期を標準にする
 
 ## 1.5 レイアウト実装方針
 
-実装時のUI基準として、ワークスペース内の [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) を参照する。
+実装時のUI基準として、ワークスペース内の [layout.pen](../../layout.pen) を参照する。
 
 ### 参加者画面
 
@@ -48,7 +55,7 @@
 - 画面上部に状態表示、中央に現在必要な情報、下部に主操作ボタンを置く。
 - 同時に見せる情報量を絞り、カードを積む構成にする。
 - `join`, `home`, `match`, `ranking` はすべてスマホ縦持ちで完結する設計にする。
-- [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) の参加者向け画面を土台にしつつ、実装時には余白、情報密度、可読性、操作導線をさらにブラッシュアップして最終UIを作る。
+- [layout.pen](../../layout.pen) の参加者向け画面を土台にしつつ、実装時には余白、情報密度、可読性、操作導線をさらにブラッシュアップして最終UIを作る。
 
 ### 運営画面
 
@@ -57,7 +64,7 @@
 - ダッシュボードは複数カラムで、卓・参加者・試合を同時表示する。
 - テーブルUIとモーダルを前提にし、一覧性を優先する。
 - admin の主要画面は 2カラムまたは 3カラムを許容する。
-- [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) の admin / monitor 画面を出発点にし、実装時にはPC利用時の一覧性と操作性を高める方向で調整する。
+- [layout.pen](../../layout.pen) の admin / monitor 画面を出発点にし、実装時にはPC利用時の一覧性と操作性を高める方向で調整する。
 
 ## 2. ディレクトリ構成案
 
@@ -73,28 +80,44 @@ match/
         match/page.tsx
         ranking/page.tsx
       admin/
+        layout.tsx
         login/page.tsx
         dashboard/page.tsx
         participants/page.tsx
         matches/page.tsx
         tables/page.tsx
+      monitor/
+        layout.tsx
+        ranking/page.tsx
       api/
         participant/register/route.ts
         participant/session/restore/route.ts
+        participant/me/route.ts
         participant/heartbeat/route.ts
+        participant/result/ack/route.ts
         matching/start/route.ts
         matching/cancel/route.ts
         match/ready/route.ts
         match/cancel-before-start/route.ts
         match/claim-win/route.ts
         match/approve-result/route.ts
+        ranking/route.ts
         admin/login/route.ts
+        admin/logout/route.ts
+        admin/dashboard/route.ts
+        admin/participants/route.ts
+        admin/matches/route.ts
+        admin/tables/route.ts
         admin/table/force-release/route.ts
+        admin/table/hold/route.ts
+        admin/table/release-hold/route.ts
         admin/match/resolve/route.ts
         admin/participant/chip-adjust/route.ts
         admin/participant/pause/route.ts
+        admin/participant/unpause/route.ts
         admin/participant/disqualify/route.ts
         admin/staff-match/start/route.ts
+        admin/staff-match/resolve/route.ts
     components/
       ui/
       participant/
@@ -103,28 +126,53 @@ match/
     lib/
       db/
         client.ts
+        server.ts
+        env.ts
         types.ts
       auth/
         participant-session.ts
         admin-session.ts
+      api/
+        response.ts
+      contracts/
+        participant-runtime.ts
+        ranking.ts
+        admin-dashboard.ts
       domain/
         participant-status.ts
         table-status.ts
         match-status.ts
         chip-rules.ts
+        state-machine.ts
+        disconnect-rules.ts
+        errors.ts
       services/
         participant-service.ts
         matching-service.ts
         match-service.ts
-        admin-service.ts
+        admin-auth-service.ts
+        admin-dashboard-service.ts
+        admin-participant-service.ts
+        admin-match-service.ts
+        staff-match-service.ts
         ranking-service.ts
+        connection-state-service.ts
       realtime/
+        client.ts
         channels.ts
-        subscriptions.ts
+        publisher.ts
+      session/
+        participant-client-session.ts
       validators/
         participant.ts
         admin.ts
         match.ts
+    hooks/
+      useParticipantRuntime.ts
+      useParticipantRealtime.ts
+      useParticipantHeartbeat.ts
+      useRankingRealtime.ts
+      useAdminDashboardRealtime.ts
     tests/
       unit/
       integration/
@@ -133,6 +181,11 @@ match/
     migrations/
     seed.sql
 ```
+
+補足:
+
+- 多表更新は migration に PostgreSQL 関数を追加し、Route Handler から RPC として呼ぶ
+- `src/lib/realtime/*` は必須とし、client subscribe / server publish / channel 名定義をここへ集約する
 
 ## 3. 1週間で実装するための開発順序
 
@@ -158,7 +211,7 @@ match/
 2. 空き卓割当
 3. 待機画面
 4. マッチ成立画面
-5. リアルタイム購読の最小構成
+5. Realtime Broadcast の最小構成
 
 ### Day 4
 
@@ -197,6 +250,9 @@ match/
 ## 4. TDD前提の実装方針
 
 AIに実装させる前提で、ドメインロジックから先にテストを書く。
+
+このプロジェクトでは、少なくとも `domain`, `service`, `auth`, `重要 API` はテスト先行を原則とする。
+先に失敗するテストを書かずに本実装へ入るのは例外扱いとし、例外は UI の骨組みだけを先に置くタスクに限る。
 
 ### 先にユニットテストを書く対象
 
@@ -263,30 +319,12 @@ AIに実装させる前提で、ドメインロジックから先にテストを
 - 1タスク1責務
 - DB変更、ドメインロジック、API、画面を一度に混ぜすぎない
 - 先に型と状態を固定してから画面へ進む
-- リアルタイムは最後に薄く差し込む
+- 共有レスポンス契約は F-007 で先に固定してから service / API / UI へ広げる
+- Realtime は終盤追加ではなく、参加者の状態同期が発生する段階で先に入れる
 
-### AIに実装させるタスク分割例
+### タスク一覧
 
-1. `participants` と `participant_sessions` の migration を作る
-2. `tables` と `matches` と `chip_ledger` の migration を作る
-3. participant / table / match の status enum を型定義する
-4. 参加登録APIとバリデーションを実装する
-5. 単一セッション無効化ロジックを実装する
-6. セッション復元APIを実装する
-7. 参加者ホーム画面を実装する
-8. マッチングサービスのユニットテストを書く
-9. マッチングサービス本体を実装する
-10. 待機開始 / 待機解除APIを実装する
-11. マッチ待機画面とマッチ成立画面を実装する
-12. ready API とベット計算を実装する
-13. 対戦中画面とキャンセル機能を実装する
-14. 勝利申告 / 承認APIを実装する
-15. ランキング取得APIとランキング画面を実装する
-16. Supabase Realtime 購読を参加者画面へ追加する
-17. 運営ログインと admin session を実装する
-18. 運営ダッシュボードを実装する
-19. 卓強制解放 / 勝敗修正 / チップ修正APIを実装する
-20. 一時停止 / 失格 / 運営戦開始APIを実装する
+詳細な分割は [`docs/tasks/`](../tasks/README.md) を参照する。
 
 ## 6. API責務をAIが迷わないようにするルール
 
@@ -309,22 +347,9 @@ AIに実装させる前提で、ドメインロジックから先にテストを
 1. unit のみなら `pnpm test`
 2. E2E を触ったなら `pnpm test:e2e`
 
-## 7. まず最初に作るべきタスク一覧
+## 7. まず最初に作るべき機能
 
-1. Next.js + Supabase + shadcn/ui の初期セットアップ
-2. DBスキーマ migration 作成
-3. seed でイベント1件・卓5件を用意
-4. 参加者状態 / 卓状態 / 試合状態の型定義
-5. チップ計算と状態遷移のユニットテスト作成
-6. 参加登録APIとセッション復元API実装
-7. ホーム画面と参加登録画面の実装
-8. マッチングサービス実装
-9. 待機画面とマッチ成立画面の実装
-10. 開始 / キャンセル / 勝利申告 / 承認API実装
-11. ランキング画面実装
-12. 運営画面の最小版実装
-
-## 8. この仕様でまず作るべき最初の3機能
+Day 1-7 の開発順序に従い、以下の3機能を最優先とする。
 
 1. 参加登録 + セッション復元
 2. マッチング + 卓割当

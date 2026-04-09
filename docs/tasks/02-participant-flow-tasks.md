@@ -5,7 +5,7 @@
 - 目的: 参加者登録、取得、状態復元のサービスをまとめる
 - 担当レイヤー: service
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/lib/services/participant-service.ts`
+  - `../../src/lib/services/participant-service.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export async function registerParticipant(params: { venueCode: string; nickname: string }): Promise<{ participant: ParticipantRow; sessionToken: string }>`
@@ -15,23 +15,34 @@
 - 実装内容:
   - 会場コード確認
   - ニックネーム一意制御
-  - 旧セッション無効化
-  - 新規セッション発行
+  - raw session token 生成
+  - `register_participant_and_issue_session` RPC を呼んで旧セッション無効化と新規セッション発行を完了させる
   - `current_match_id`, `table`, `opponent` をまとめて返す
+  - `ParticipantRuntimeState` の UI 必須項目、特に `lastNonDisconnectStatus`, `opponentReady`, `winnerParticipantId`, `winnerClaimedByParticipantId`, `disqualifiedReason`, `resultDelta` を埋めて返す
 - 完了条件:
   - 参加者の現在状態を画面がそのまま使える形で返す
-- 依存関係: `F-006`, `F-008`, `F-011`
+- 依存関係: `F-006`, `F-007`, `F-008`, `F-011`, `F-013a`, `F-014`
 - 並列作業メモ: `P-002` と同時に進めない
+- 推奨 skill:
+  - `freshers-match-db-api`
+  - `freshers-match-match-flow`
+- 先に確認するファイル:
+  - `../design/02-data-model-and-api.md`
+  - `../design/01-state-and-realtime.md`
+  - `../../src/lib/auth/participant-session.ts`
+- おすすめプロンプト:
+  - `freshers-match-db-api と freshers-match-match-flow を使って P-001 を実装してください。participant-service.ts に register, restore, runtime-state, heartbeat をまとめ、会場コード確認、ニックネーム一意制御、raw token 生成、register_participant_and_issue_session RPC 呼び出し、current_match_id からの runtime 復元を実装してください。旧セッション無効化と session row 発行は RPC 側の責務に寄せ、ParticipantRuntimeState の UI 必須項目を漏れなく返してください。完了時は pnpm format, pnpm lint, pnpm typecheck, 必要なら pnpm test を実行してください。`
 
 ## P-002 参加者API
 
 - 目的: 参加登録・復元・heartbeat API を作る
 - 担当レイヤー: API
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/api/participant/register/route.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/api/participant/session/restore/route.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/api/participant/heartbeat/route.ts`
-  - `/Users/kitamurareiki/develop/match/src/lib/api/response.ts`
+  - `../../src/app/api/participant/register/route.ts`
+  - `../../src/app/api/participant/session/restore/route.ts`
+  - `../../src/app/api/participant/me/route.ts`
+  - `../../src/app/api/participant/heartbeat/route.ts`
+  - `../../src/lib/api/response.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export async function POST(request: Request): Promise<Response>`
@@ -41,19 +52,29 @@
   - body を zod で検証
   - service を呼ぶ
   - 共通 JSON レスポンスを返す
+  - `GET /api/participant/me` でRealtimeイベント受信時の再同期用の現在状態取得を提供する
+  - participant 系 API は `Authorization: Bearer <sessionToken>` で本人特定する
 - 完了条件:
-  - 3 API が疎通し、異常系も JSON で返る
-- 依存関係: `P-001`
+  - 4 API が疎通し、異常系も JSON で返る
+- 依存関係: `P-001`, `F-007`
 - 並列作業メモ: `P-003` と並列可能
+- 推奨 skill:
+  - `freshers-match-db-api`
+- 先に確認するファイル:
+  - `../../src/lib/validators/participant.ts`
+  - `../../src/lib/services/participant-service.ts`
+  - `../design/02-data-model-and-api.md`
+- おすすめプロンプト:
+  - `freshers-match-db-api を使って P-002 を実装してください。participant/register, participant/session/restore, participant/me, participant/heartbeat の route.ts と共通 response ヘルパを追加し、body を zod で検証して service を呼ぶ薄い API にしてください。participant/me と heartbeat は Authorization: Bearer <sessionToken> で本人を解決し、異常系は AppError ベースで JSON に統一してください。完了時は pnpm format, pnpm lint, pnpm typecheck, 必要なら pnpm test を実行してください。`
 
 ## P-003 参加者画面シェル
 
 - 目的: 参加者向けの共通レイアウトと状態取得導線を作る
 - 担当レイヤー: UI
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/(participant)/layout.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/participant-shell.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/status-badge.tsx`
+  - `../../src/app(participant)/layout.tsx`
+  - `../../src/components/participant/participant-shell.tsx`
+  - `../../src/components/participant/status-badge.tsx`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export default function ParticipantLayout(props: Readonly<{ children: React.ReactNode }>): JSX.Element`
@@ -63,19 +84,27 @@
   - 参加者画面共通の余白、ヘッダー、カード幅を定義する
   - `max-w-md mx-auto` のモバイルファースト前提で組む
   - 下部主要ボタンを置きやすい縦レイアウトにする
-  - [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) の参加者画面を基準にしつつ、実装時に余白、タイポグラフィ、ボタンサイズ、画面遷移導線を改善して仕上げる
+  - [layout.pen](../../layout.pen) の参加者画面を基準にしつつ、実装時に余白、タイポグラフィ、ボタンサイズ、画面遷移導線を改善して仕上げる
 - 完了条件:
   - 各ページが同じ UI 骨組みで実装できる
 - 依存関係: `F-002`, `F-007`
 - 並列作業メモ: `P-002`, `P-004` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+- 先に確認するファイル:
+  - `../../layout.pen`
+  - `../../.codex/skills/freshers-match-participant-ui/references/screen-map.md`
+  - `../design/04-implementation-plan.md`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui を使って P-003 を実装してください。参加者向け共通レイアウト、participant shell、status badge を作り、max-w-md mx-auto のスマホ前提 1 カラムUI を整備してください。layout.pen の participant 画面を参考にしつつ、余白、可読性、CTA の押しやすさはさらにブラッシュアップしてください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## P-004 参加登録画面
 
 - 目的: QR 遷移先から参加登録できる画面を作る
 - 担当レイヤー: UI
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/(participant)/join/page.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/join-form.tsx`
+  - `../../src/app(participant)/join/page.tsx`
+  - `../../src/components/participant/join-form.tsx`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export default function JoinPage(): JSX.Element`
@@ -86,19 +115,28 @@
   - submit 時に `POST /api/participant/register`
   - 成功時にトークン保存してホームへ遷移
   - スマホ片手操作を前提に、入力欄と確定ボタンを縦積みにする
-  - [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) の `Participant / Join` を参考にする
+  - [layout.pen](../../layout.pen) の `Participant / Join` を参考にする
 - 完了条件:
   - 重複ニックネームと会場コード不正が画面に表示される
 - 依存関係: `P-002`, `P-003`
 - 並列作業メモ: `P-005` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+  - `freshers-match-testing`
+- 先に確認するファイル:
+  - `../../layout.pen`
+  - `../../src/app/api/participant/register/route.ts`
+  - `../../.codex/skills/freshers-match-participant-ui/references/screen-map.md`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui を使って P-004 を実装してください。join/page.tsx と JoinForm を作成し、会場コードとニックネームの入力、POST /api/participant/register、成功時のトークン保存とホーム遷移、失敗時のエラー表示を組み込んでください。スマホ片手操作前提で入力欄と確定ボタンを縦積みにしてください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## P-005 セッション復元フック
 
 - 目的: 再読み込み時の状態復元処理を共通化する
 - 担当レイヤー: UI / client state
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/lib/session/participant-client-session.ts`
-  - `/Users/kitamurareiki/develop/match/src/hooks/useParticipantRuntime.ts`
+  - `../../src/lib/session/participant-client-session.ts`
+  - `../../src/hooks/useParticipantRuntime.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export function saveParticipantSessionToken(token: string): void`
@@ -108,18 +146,31 @@
 - 実装内容:
   - ローカル保存したトークンで `/api/participant/session/restore` を叩く
   - 復元結果をページで再利用できるようにする
+  - 以後の再取得は `/api/participant/me` を使えるようにする
+  - 状態 (status) が変化し、現在開いているページと合わなくなった場合に `/home` ↔ `/match` へ自動リダイレクトする仕組みをフックに含める
+  - `participant/me` と `heartbeat` には `Authorization: Bearer <sessionToken>` を付ける
+  - 待機画面用に `queuedAt` も hook から取得できるようにする
 - 完了条件:
   - 再読み込み後に現在画面へ復帰できる状態が取れる
-- 依存関係: `P-002`
+- 依存関係: `P-002`, `F-007`
 - 並列作業メモ: `P-004` と並列可能
+- 推奨 skill:
+  - `freshers-match-db-api`
+  - `freshers-match-participant-ui`
+- 先に確認するファイル:
+  - `../../src/app/api/participant/session/restore/route.ts`
+  - `../../src/lib/services/participant-service.ts`
+  - `../design/01-state-and-realtime.md`
+- おすすめプロンプト:
+  - `freshers-match-db-api と freshers-match-participant-ui を使って P-005 を実装してください。participant-client-session.ts と useParticipantRuntime を追加し、ローカル保存トークンによるセッション復元と現在状態の再取得を共通化してください。再読み込み時に現在画面へ戻るための最小責務に絞ってください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## P-006 参加者ホーム画面
 
 - 目的: 参加者が現在の状態とチップ数を確認し、マッチング開始できる画面を作る
 - 担当レイヤー: UI
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/(participant)/home/page.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/home-panel.tsx`
+  - `../../src/app(participant)/home/page.tsx`
+  - `../../src/components/participant/home-panel.tsx`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export default function HomePage(): JSX.Element`
@@ -128,39 +179,57 @@
   - チップ数、現在状態、現在の卓情報、ランキング導線を表示する
   - マッチング開始ボタンを置く
   - 主要操作を縦1カラムで配置する
-  - [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) の `Participant / Home` を参考にする
+  - [layout.pen](../../layout.pen) の `Participant / Home` を参考にする
 - 完了条件:
   - 登録済み参加者がホームで必要情報を確認できる
 - 依存関係: `P-003`, `P-005`, `M-002`
 - 並列作業メモ: `P-007` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+- 先に確認するファイル:
+  - `../../layout.pen`
+  - `../../src/hooks/useParticipantRuntime.ts`
+  - `../../src/app(participant)/layout.tsx`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui を使って P-006 を実装してください。participant home 画面と HomePanel を作成し、チップ数、現在状態、卓情報、ランキング導線、マッチング開始ボタンをスマホ1カラムで整理してください。layout.pen の Participant / Home を参考にしつつ、情報の優先順位と読みやすさを改善してください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## P-007 ランキングサービスとAPI
 
 - 目的: 総チップ所持数ランキングを取得できるようにする
 - 担当レイヤー: service / API
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/lib/services/ranking-service.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/api/ranking/route.ts`
+  - `../../src/lib/services/ranking-service.ts`
+  - `../../src/app/api/ranking/route.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export async function listRanking(params: { eventId: string }): Promise<RankingEntry[]>`
   - `export async function GET(request: Request): Promise<Response>`
 - 実装内容:
-  - `chip_balance DESC, updated_at ASC, id ASC` でソートする
-  - 失格者は `is_disqualified` を表示データへ反映する
+  - `chip_balance DESC, created_at ASC, id ASC` でソートする
+  - 失格者は `status='disqualified'` を表示データへ反映する
+  - ranking API 自体は active event を内部解決して返す
 - 完了条件:
   - API からランキング一覧が返る
-- 依存関係: `F-006`
+- 依存関係: `F-006`, `F-007`
 - 並列作業メモ: `P-008` と並列可能
+- 推奨 skill:
+  - `freshers-match-db-api`
+- 先に確認するファイル:
+  - `../design/02-data-model-and-api.md`
+  - `../design/03-admin-ops-and-failures.md`
+  - `../../src/lib/db/types.ts`
+- おすすめプロンプト:
+  - `freshers-match-db-api を使って P-007 を実装してください。ranking-service.ts と ranking API を追加し、chip_balance DESC, created_at ASC, id ASC の並びでランキングを返してください。失格者表示は status='disqualified' を使って表現し、重複フラグは導入しないでください。完了時は pnpm format, pnpm lint, pnpm typecheck, 必要なら pnpm test を実行してください。`
 
 ## P-008 ランキング画面
 
 - 目的: 参加者用とモニター用のランキング UI を作る
 - 担当レイヤー: UI
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/(participant)/ranking/page.tsx`
-  - `/Users/kitamurareiki/develop/match/src/app/monitor/ranking/page.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/ranking/ranking-list.tsx`
+  - `../../src/app(participant)/ranking/page.tsx`
+  - `../../src/app/monitor/layout.tsx`
+  - `../../src/app/monitor/ranking/page.tsx`
+  - `../../src/components/ranking/ranking-list.tsx`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export default function ParticipantRankingPage(): JSX.Element`
@@ -169,24 +238,44 @@
   - ランキング一覧
   - 自分の行のハイライト
   - モニター用は余計な操作を持たない
+  - モニター用ページ (`/monitor/ranking/page.tsx`) は admin 認証不要の公開ページとし、独立した layout (`/monitor/layout.tsx`) を持つ
 - 完了条件:
   - 参加者画面とモニター画面の両方で一覧が見える
 - 依存関係: `P-007`, `P-003`
 - 並列作業メモ: `P-006` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+  - `freshers-match-admin-ui`
+- 先に確認するファイル:
+  - `../../layout.pen`
+  - `../../src/app/api/ranking/route.ts`
+  - `../../.codex/skills/freshers-match-participant-ui/references/screen-map.md`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui と freshers-match-admin-ui を使って P-008 を実装してください。participant ranking と monitor ranking の 2 画面、および共通 RankingList を作成してください。参加者画面では自分の行を見つけやすくし、モニター画面では一覧性を優先してください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## P-009 heartbeat 実装
 
 - 目的: 30秒切断判定のために定期 heartbeat を送る
 - 担当レイヤー: UI / client infra
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/hooks/useParticipantHeartbeat.ts`
+  - `../../src/hooks/useParticipantHeartbeat.ts`
 - 更新ファイル:
-  - `/Users/kitamurareiki/develop/match/src/components/participant/participant-shell.tsx`
+  - `../../src/components/participant/participant-shell.tsx`
 - 実装する関数シグネチャ:
   - `export function useParticipantHeartbeat(enabled: boolean): void`
 - 実装内容:
-  - セッショントークンがあるとき定期で `/api/participant/heartbeat` を呼ぶ
+  - セッショントークンがあるとき periodic に（約 10 秒間隔で） `/api/participant/heartbeat` を呼ぶ
+  - participant トークンは localStorage 保持、API は `Authorization: Bearer` で送る
 - 完了条件:
   - 開いている参加者端末から `last_seen_at` が更新される
 - 依存関係: `P-002`, `P-005`
 - 並列作業メモ: `P-006`, `P-008` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+  - `freshers-match-match-flow`
+- 先に確認するファイル:
+  - `../design/01-state-and-realtime.md`
+  - `../../src/components/participant/participant-shell.tsx`
+  - `../../src/app/api/participant/heartbeat/route.ts`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui と freshers-match-match-flow を使って P-009 を実装してください。useParticipantHeartbeat を作り、セッショントークンがある参加者画面で定期 heartbeat を送って last_seen_at を更新できるようにしてください。通信失敗時に UI を壊さないようにしてください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`

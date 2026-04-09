@@ -14,8 +14,15 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 
 ## 初回投入で使うファイル
 
-- スキーマ: [`supabase/migrations/0001_init_schema.sql`](/Users/kitamurareiki/develop/match/supabase/migrations/0001_init_schema.sql)
-- 初期データ: [`supabase/seed.sql`](/Users/kitamurareiki/develop/match/supabase/seed.sql)
+- スキーマ: [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql)
+- 追補スキーマ: [`supabase/migrations/0002_align_schema_with_guardrails.sql`](../../supabase/migrations/0002_align_schema_with_guardrails.sql)
+- 初期データ: [`supabase/seed.sql`](../../supabase/seed.sql)
+
+補足:
+
+- `0001` はテーブルと主要制約を作るベーススキーマです
+- `0002` は guardrail 整合のための追補です（`matches_started_and_bet_consistency_check` などの制約再定義を含む）。fresh setup でも必ず順番に実行してください
+- 今後の RPC 実装などは `0003` 以降の別 migration として追加し、既存 schema migration を書き換えない前提で進めます
 
 ## 手順 1: migration を流す
 
@@ -23,8 +30,11 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 2. 対象 project を開く
 3. 左メニューの `SQL Editor` を開く
 4. `New query` を押す
-5. [`supabase/migrations/0001_init_schema.sql`](/Users/kitamurareiki/develop/match/supabase/migrations/0001_init_schema.sql) の中身を全部貼る
+5. [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql) の中身を全部貼る
 6. `Run` を押す
+7. 続けて新しい `New query` を開く
+8. [`supabase/migrations/0002_align_schema_with_guardrails.sql`](../../supabase/migrations/0002_align_schema_with_guardrails.sql) の中身を全部貼る
+9. `Run` を押す
 
 成功したら、以下のテーブルが作成されます。
 
@@ -47,16 +57,35 @@ Supabase の Security Advisor で `RLS Disabled in Public` と出る場合は、
 
 - すべての `public` テーブルで RLS を有効にする
 - 参加者ブラウザから DB を直接触らせない
-- ブラウザは Next.js の Route Handlers / Server Actions だけを叩く
+- ブラウザは Next.js の Route Handlers だけを叩く
 - サーバー側だけが `service_role` を使って DB を操作する
 
 このため、初期段階では「anon に対する公開 policy」はまだ作りません。
 RLS を有効にして policy を作らなければ、ブラウザからの直接アクセスは通らず、安全側に倒せます。
 
+## 手順 1.5: Realtime Broadcast の前提を確認する
+
+このアプリは短周期 polling を使わず、Supabase Realtime Broadcast を前提に状態同期します。
+
+- 使用するのは `Postgres Changes` の行購読ではなく `Broadcast` です
+- 参加者ブラウザが `public` テーブルを直接 subscribe する設計にはしません
+- サーバー側の Route Handler / service が mutation 成功後に invalidation event を publish し、ブラウザはその通知を受けて認証済み read API を再取得します
+
+確認ポイント:
+
+1. Supabase ダッシュボードの `Realtime` が project で有効になっている
+2. 実装時に `NEXT_PUBLIC_SUPABASE_URL` と `NEXT_PUBLIC_SUPABASE_ANON_KEY` を使ってブラウザ側 realtime client を作れる
+3. server 側 publish helper では service role で Broadcast を送る設計にする
+
+補足:
+
+- Broadcast 採用のため、`Database > Replication` で各テーブルの change feed を個別に有効化する前提は置きません
+- Realtime は通知チャネルであり、状態の正本はあくまで Route Handler 経由の read API です
+
 ## 手順 2: 管理者パスコードのハッシュを作る
 
-`supabase/seed.sql` の `admin_users.passcode_hash` は仮値です。
-seed を流す前に、本番で使う管理者パスコードのハッシュを作って差し替えます。
+`supabase/seed.sql` には開発用ハッシュがすでに入っています。
+ローカル確認だけならそのままでも動きますが、実運用や共有環境で使う前には必ず本番用の管理者パスコードへ差し替えてください。
 
 ターミナルで以下を実行してください。
 
@@ -72,17 +101,13 @@ pnpm admin:hash 1234
 4d0b...:0c4e...
 ```
 
-この出力文字列を、[`supabase/seed.sql`](/Users/kitamurareiki/develop/match/supabase/seed.sql) の以下の箇所へそのまま入れます。
-
-```sql
-'replace-me-with-a-real-hash'
-```
+この出力文字列で、[`supabase/seed.sql`](../../supabase/seed.sql) に入っている `admin_users.passcode_hash` の値を置き換えます。
 
 ## 手順 3: seed を流す
 
 1. 再度 `SQL Editor` を開く
 2. `New query` を押す
-3. 更新済みの [`supabase/seed.sql`](/Users/kitamurareiki/develop/match/supabase/seed.sql) を全部貼る
+3. 更新済みの [`supabase/seed.sql`](../../supabase/seed.sql) を全部貼る
 4. `Run` を押す
 
 成功すると、以下が投入されます。
@@ -100,7 +125,7 @@ pnpm admin:hash 1234
    - `status` が `active`
 2. `admin_users`
    - `display_name` が `Event Admin`
-   - `passcode_hash` が `replace-me-with-a-real-hash` ではない
+   - `passcode_hash` が、自分で設定した管理者パスコードのハッシュになっている
 3. `tables`
    - `table_number` が 1 から 5 まで存在する
    - `status` がすべて `available`
@@ -113,16 +138,28 @@ pnpm admin:hash 1234
 - まず `SQL Editor` のエラーメッセージを確認してください
 - 不明なら、そのエラーメッセージをそのまま共有してください
 
+### すでに 0001 を流したあとで schema を更新したい
+
+- その場合は `0001` を流し直さず、[`supabase/migrations/0002_align_schema_with_guardrails.sql`](../../supabase/migrations/0002_align_schema_with_guardrails.sql) だけを実行してください
+- この追補 migration は、docs と schema の guardrail を同期するためのものです（制約の再定義を含むため no-op ではありません）
+
 ### `RLS Disabled in Public` と出る
 
 - migration 実行前なら正常です
 - migration 実行後も出るなら、SQL が途中で失敗している可能性があります
-- [`supabase/migrations/0001_init_schema.sql`](/Users/kitamurareiki/develop/match/supabase/migrations/0001_init_schema.sql) を最後まで実行できているか確認してください
+- [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql) を最後まで実行できているか確認してください
+
+### Realtime はつながるが画面が更新されない
+
+- client 側 subscribe はできていても、server 側で Broadcast publish を呼んでいない可能性があります
+- まず mutation 成功後に invalidation event を publish しているか確認してください
+- 次に、受信後に `participant/me`, `ranking`, `admin/dashboard` などの read API を再取得しているか確認してください
+- Broadcast を使う設計なので、`Postgres Changes` の replication 設定不足を疑う前に publish / subscribe 実装を確認してください
 
 ### seed 実行時にエラーが出る
 
 - 先に migration が成功していない可能性があります
-- `admin_users.passcode_hash` の仮値を置き換えていない可能性があります
+- `admin_users.passcode_hash` を本番用へ差し替え忘れている可能性があります
 
 ### どの値を参加者に見せるのか分からない
 

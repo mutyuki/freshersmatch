@@ -5,8 +5,8 @@
 - 目的: 対人優先ランダムマッチングと卓仮予約を行う中核ロジックを実装する
 - 担当レイヤー: service
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/lib/services/matching-service.ts`
-  - `/Users/kitamurareiki/develop/match/src/tests/unit/matching-service.test.ts`
+  - `../../src/lib/services/matching-service.ts`
+  - `../../src/tests/unit/matching-service.test.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export async function executeStartQueue(params: { participantId: string }): Promise<ParticipantRuntimeState>`
@@ -15,23 +15,32 @@
   - `export function chooseOpponent(params: { requesterId: string; queuedParticipants: ParticipantRow[] }): ParticipantRow | null`
   - `export function shouldOfferStaffMatch(params: { queuedAt: string; now: Date; staffMatchWaitSeconds: number }): boolean`
 - 実装内容:
-  - queueing 登録
-  - 空き卓取得
-  - 直前対戦相手回避
-  - 候補不足時の制約解除
-  - match / participants / tables の一括更新
+  - queueing 登録の前提条件を検証する
+  - 空き卓取得、直前対戦相手回避、候補不足時の制約解除、運営戦候補判定などの業務ルールをまとめる
+  - `start_queue_and_try_match` RPC を唯一の mutator として呼び出す
+  - RPC 実行結果から runtime state を再構築する
+  - service が `match / participants / tables` を個別更新してマッチ成立を作る実装は行わない
 - 完了条件:
   - 2人待機で match が作られ、卓が `reserved` になる
-- 依存関係: `F-006`, `F-007`, `F-010`
+- 依存関係: `F-006`, `F-007`, `F-010`, `F-013a`, `F-014`
 - 並列作業メモ: `M-002` と同時に進めない
+- 推奨 skill:
+  - `freshers-match-match-flow`
+  - `freshers-match-testing`
+- 先に確認するファイル:
+  - `../design/01-state-and-realtime.md`
+  - `../design/02-data-model-and-api.md`
+  - `../../.codex/skills/freshers-match-match-flow/references/state-machine.md`
+- おすすめプロンプト:
+  - `freshers-match-match-flow と freshers-match-testing を使って M-001 を実装してください。matching-service.ts に queue 開始/解除の service、相手選定、運営戦候補判定、RPC 呼び出し前の業務ルール整理を実装してください。マッチ成立そのものの多表更新は start_queue_and_try_match RPC を唯一の真実源にし、service から個別更新しないでください。直前相手回避は可能なら避け、候補不足時は制約を無視してください。テストで相手選定と卓仮予約の主要ケースを固定してください。完了時は pnpm format, pnpm lint, pnpm typecheck, pnpm test を実行してください。`
 
 ## M-002 マッチングAPI
 
 - 目的: 待機開始 / 待機解除 API を作る
 - 担当レイヤー: API
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/api/matching/start/route.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/api/matching/cancel/route.ts`
+  - `../../src/app/api/matching/start/route.ts`
+  - `../../src/app/api/matching/cancel/route.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export async function POST(request: Request): Promise<Response>`
@@ -39,21 +48,31 @@
   - セッションから本人特定
   - queue 開始 / 解除
   - レスポンスに現在状態を返す
+  - 成功時に `publishInvalidation` を呼び、少なくとも `participant` と `admin` を通知する
 - 完了条件:
   - 待機開始と待機解除が UI から呼べる
 - 依存関係: `M-001`, `F-011`
 - 並列作業メモ: `M-003` と並列可能
+- 推奨 skill:
+  - `freshers-match-db-api`
+  - `freshers-match-match-flow`
+- 先に確認するファイル:
+  - `../../src/lib/services/matching-service.ts`
+  - `../../src/lib/auth/participant-session.ts`
+  - `../design/02-data-model-and-api.md`
+- おすすめプロンプト:
+  - `freshers-match-db-api と freshers-match-match-flow を使って M-002 を実装してください。matching/start と matching/cancel の API を作り、セッションから participant を特定して queue の開始・解除を行ってください。レスポンスは現在状態を返し、異常系を JSON でそろえてください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## M-003 待機画面とマッチ成立画面
 
 - 目的: 待機中UIとマッチ成立UIを作る
 - 担当レイヤー: UI
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/(participant)/match/page.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/queue-panel.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/match-reserved-panel.tsx`
+  - `../../src/app(participant)/match/page.tsx`
+  - `../../src/components/participant/queue-panel.tsx`
+  - `../../src/components/participant/match-reserved-panel.tsx`
 - 更新ファイル:
-  - `/Users/kitamurareiki/develop/match/src/components/participant/home-panel.tsx`
+  - `../../src/components/participant/home-panel.tsx`
 - 実装する関数シグネチャ:
   - `export default function MatchPage(): JSX.Element`
   - `export function QueuePanel(props: { runtime: ParticipantRuntimeState }): JSX.Element`
@@ -61,47 +80,72 @@
 - 実装内容:
   - 待機時間表示
   - マッチ成立後に卓番号、ゲーム名、相手名を表示
+  - `runtime.queuedAt` から待機秒数を計算して表示する
   - 開始 / キャンセルボタンの置き場所を確保
-  - [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) の `Participant / Queue` と `Participant / Match Reserved` を参考にする
+  - [layout.pen](../../layout.pen) の `Participant / Queue` と `Participant / Match Reserved` を参考にする
 - 完了条件:
   - 状態に応じて待機画面と成立画面が切り替わる
 - 依存関係: `P-003`, `P-005`, `M-002`
 - 並列作業メモ: `M-004` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+  - `freshers-match-match-flow`
+- 先に確認するファイル:
+  - `../../layout.pen`
+  - `../../src/components/participant/home-panel.tsx`
+  - `../../.codex/skills/freshers-match-participant-ui/references/screen-map.md`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui と freshers-match-match-flow を使って M-003 を実装してください。match/page.tsx, QueuePanel, MatchReservedPanel を作り、待機時間、卓番号、ゲーム名、相手名、開始/キャンセル導線を状態に応じて切り替えて表示してください。layout.pen の Queue と Match Reserved を参考にしつつ、参加者が迷わない導線を優先してください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## M-004 試合サービス
 
 - 目的: 開始、開始前キャンセル、勝利申告、承認、拒否、結果確定を実装する
 - 担当レイヤー: service
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/lib/services/match-service.ts`
-  - `/Users/kitamurareiki/develop/match/src/tests/integration/match-service.test.ts`
+  - `../../src/lib/services/match-service.ts`
+  - `../../src/tests/integration/match-service.test.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export async function executeReadyMatch(params: { participantId: string; matchId: string }): Promise<ParticipantRuntimeState>`
   - `export async function executeCancelBeforeStart(params: { participantId: string; matchId: string }): Promise<void>`
   - `export async function executeClaimWin(params: { participantId: string; matchId: string }): Promise<ParticipantRuntimeState>`
   - `export async function executeApproveResult(params: { participantId: string; matchId: string; approve: boolean }): Promise<ParticipantRuntimeState>`
+  - `export async function acknowledgeResultConfirmed(params: { participantId: string }): Promise<ParticipantRuntimeState>`
   - `export async function completeMatchAndApplyChipLedger(params: { matchId: string; winnerParticipantId: string }): Promise<void>`
 - 実装内容:
   - ready の同時押下
   - bet 差し引き
+  - `in_progress` 遷移時の `started_at` 設定
   - `winner_claimed` 化
   - 承認拒否時の差し戻し
   - 承認成功時の ledger 反映、卓解放、状態復帰
+  - 対人戦 `completed` と対人戦 `force_finished_by_admin` では `last_opponent_participant_id` を互いに更新する
+  - `acknowledgeResultConfirmed` で `result_confirmed -> registered` を処理する
+  - 運営戦では 1人 ready 開始と、運営結果確定の分岐を持つ
 - 完了条件:
   - 対人戦と運営戦の両方の結果確定が通る
-- 依存関係: `F-009`, `F-010`, `F-006`
+- 依存関係: `F-009`, `F-010`, `F-006`, `F-013b`, `F-014`
 - 並列作業メモ: `M-005` と並列可能
+- 推奨 skill:
+  - `freshers-match-match-flow`
+  - `freshers-match-testing`
+- 先に確認するファイル:
+  - `../../src/lib/domain/chip-rules.ts`
+  - `../../src/lib/domain/state-machine.ts`
+  - `../testing/test-matrix.md`
+- おすすめプロンプト:
+  - `freshers-match-match-flow と freshers-match-testing を使って M-004 を TDD で実装してください。ready、開始前キャンセル、勝利申告、承認、承認拒否、結果確定、ledger 反映、卓解放までを match-service.ts に実装してください。ready の競合、二重承認防止、承認拒否で in_progress に戻る挙動を必ずテストしてください。完了時は pnpm format, pnpm lint, pnpm typecheck, pnpm test を実行してください。`
 
 ## M-005 試合API
 
 - 目的: 試合操作用 API を作る
 - 担当レイヤー: API
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/api/match/ready/route.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/api/match/cancel-before-start/route.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/api/match/claim-win/route.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/api/match/approve-result/route.ts`
+  - `../../src/app/api/match/ready/route.ts`
+  - `../../src/app/api/match/cancel-before-start/route.ts`
+  - `../../src/app/api/match/claim-win/route.ts`
+  - `../../src/app/api/match/approve-result/route.ts`
+  - `../../src/app/api/participant/result/ack/route.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export async function POST(request: Request): Promise<Response>`
@@ -109,24 +153,38 @@
   - セッション検証
   - body 検証
   - service 呼び出し
+  - 成功時に `publishInvalidation` を呼ぶ
+  - `ready`, `cancel-before-start`, `claim-win` は少なくとも `participant`, `match`, `admin` を通知する
+  - `approve-result` と `participant/result/ack` は少なくとも `participant`, `admin`, `ranking` を通知する
 - 完了条件:
-  - 4 API が完成し、異常系 409 / 401 / 400 が返る
+  - 5 API が完成し、異常系 409 / 401 / 400 が返る
 - 依存関係: `M-004`, `F-011`, `F-008`
 - 並列作業メモ: `M-006` と並列可能
+- 推奨 skill:
+  - `freshers-match-db-api`
+  - `freshers-match-match-flow`
+- 先に確認するファイル:
+  - `../../src/lib/services/match-service.ts`
+  - `../../src/lib/validators/match.ts`
+  - `../../src/lib/auth/participant-session.ts`
+- おすすめプロンプト:
+  - `freshers-match-db-api と freshers-match-match-flow を使って M-005 を実装してください。match/ready, cancel-before-start, claim-win, approve-result と participant/result/ack の API を作り、セッション検証、body 検証、service 呼び出しに責務を絞ってください。HTTP ステータスは 400, 401, 409 を適切に返してください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## M-006 対戦中・勝利申告・承認 UI
 
 - 目的: 試合開始後の参加者操作 UI を作る
 - 担当レイヤー: UI
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/components/participant/in-progress-panel.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/result-approval-panel.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/result-confirmed-panel.tsx`
+  - `../../src/components/participant/in-progress-panel.tsx`
+  - `../../src/components/participant/claim-wait-panel.tsx`
+  - `../../src/components/participant/result-approval-panel.tsx`
+  - `../../src/components/participant/result-confirmed-panel.tsx`
 - 更新ファイル:
-  - `/Users/kitamurareiki/develop/match/src/app/(participant)/match/page.tsx`
-  - `/Users/kitamurareiki/develop/match/src/components/participant/match-reserved-panel.tsx`
+  - `../../src/app(participant)/match/page.tsx`
+  - `../../src/components/participant/match-reserved-panel.tsx`
 - 実装する関数シグネチャ:
   - `export function InProgressPanel(props: { runtime: ParticipantRuntimeState }): JSX.Element`
+  - `export function ClaimWaitPanel(props: { runtime: ParticipantRuntimeState }): JSX.Element`
   - `export function ResultApprovalPanel(props: { runtime: ParticipantRuntimeState }): JSX.Element`
   - `export function ResultConfirmedPanel(props: { runtime: ParticipantRuntimeState }): JSX.Element`
 - 実装内容:
@@ -135,50 +193,159 @@
   - 勝利申告
   - 承認 / 承認しない
   - 結果確定表示
-  - [layout.pen](/Users/kitamurareiki/develop/match/layout.pen) の `Participant / In Progress`、`Participant / Claim Waiting`、`Participant / Result Approval`、`Participant / Result Confirmed` を参考にする
+  - 各種ボタン（開始、勝利申告など）は連打防止 (debounce または disable 状態の管理) を実装し、無駄な API 呼び出しを防ぐ
+  - 結果確認後に `participant/result/ack` を呼ぶ導線を置く
+  - 運営戦 (`is_staff_match=true`) の場合は対戦相手欄に「運営スタッフ」を表示し、勝利申告ボタンは非表示にする。代わりに「運営が結果を確定します」のガイダンスを表示する
+  - [layout.pen](../../layout.pen) の `Participant / In Progress`、`Participant / Claim Waiting`、`Participant / Result Approval`、`Participant / Result Confirmed` を参考にする
 - 完了条件:
   - 参加者が試合開始から結果確定まで UI 上で完結できる
+  - 運営戦時に適切なガイダンスが表示される
 - 依存関係: `M-005`, `M-003`
 - 並列作業メモ: `M-007` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+  - `freshers-match-match-flow`
+- 先に確認するファイル:
+  - `../../layout.pen`
+  - `../../src/app(participant)/match/page.tsx`
+  - `../../.codex/skills/freshers-match-participant-ui/references/screen-map.md`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui と freshers-match-match-flow を使って M-006 を実装してください。in-progress, claim-wait, result-approval, result-confirmed の各 panel を作り、開始、キャンセル、勝利申告、承認待ち、承認、承認しない、結果確定表示を一連の参加者UIとして完成させてください。layout.pen を基準にしつつ、スマホで押し間違えにくいボタン配置にしてください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
-## M-007 リアルタイム購読基盤
+## M-006b 例外状態パネル UI
 
-- 目的: participant / match / table の更新を画面へ反映する
-- 担当レイヤー: realtime
+- 目的: paused / disqualified / disconnected 時の参加者画面を作る
+- 担当レイヤー: UI
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/lib/realtime/channels.ts`
-  - `/Users/kitamurareiki/develop/match/src/lib/realtime/subscriptions.ts`
-  - `/Users/kitamurareiki/develop/match/src/hooks/useParticipantRealtime.ts`
-  - `/Users/kitamurareiki/develop/match/src/hooks/useRankingRealtime.ts`
+  - `../../src/components/participant/paused-panel.tsx`
+  - `../../src/components/participant/disqualified-panel.tsx`
+  - `../../src/components/participant/reconnecting-overlay.tsx`
 - 更新ファイル:
-  - `/Users/kitamurareiki/develop/match/src/hooks/useParticipantRuntime.ts`
-  - `/Users/kitamurareiki/develop/match/src/app/(participant)/ranking/page.tsx`
-  - `/Users/kitamurareiki/develop/match/src/app/monitor/ranking/page.tsx`
+  - `../../src/app(participant)/home/page.tsx`
+  - `../../src/app(participant)/match/page.tsx`
 - 実装する関数シグネチャ:
-  - `export function participantChannelName(eventId: string, participantId: string): string`
-  - `export function useParticipantRealtime(params: { eventId: string; participantId: string; onChange: () => Promise<void> }): void`
-  - `export function useRankingRealtime(params: { eventId: string; onChange: () => Promise<void> }): void`
+  - `export function PausedPanel(): JSX.Element`
+  - `export function DisqualifiedPanel(): JSX.Element`
+  - `export function ReconnectingOverlay(): JSX.Element`
 - 実装内容:
-  - participant, match, table の更新時に runtime refresh を呼ぶ
-  - ranking ページで再読込する
+  - PausedPanel: 「運営により一時停止されています。運営に問い合わせてください」を表示する。ホーム画面で `status === 'paused'` の時に表示
+  - DisqualifiedPanel: 「失格となりました」と理由を表示する。ホーム画面で `status === 'disqualified'` の時に表示
+  - ReconnectingOverlay: 「再接続中...」のオーバーレイを表示し、復帰後は `last_non_disconnect_status` に応じた画面へ遷移する。全画面で `status === 'disconnected'` の時にオーバーレイとして表示
+  - [layout.pen](../../layout.pen) を参考にする
+- 完了条件:
+  - paused / disqualified / disconnected の各状態で適切なUI が表示される
+- 依存関係: `M-006`, `P-004`
+- 並列作業メモ: `M-007` と並列可能
+- 推奨 skill:
+  - `freshers-match-participant-ui`
+- 先に確認するファイル:
+  - `../design/02-data-model-and-api.md`
+  - `../../layout.pen`
+- おすすめプロンプト:
+  - `freshers-match-participant-ui を使って M-006b を実装してください。paused-panel, disqualified-panel, reconnecting-overlay を作り、それぞれ一時停止表示、失格理由表示、再接続中オーバーレイを実装してください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
+
+## M-007 状態同期基盤
+
+- 目的: participant / match / table の更新を Realtime で画面へ即時反映する
+- 担当レイヤー: client sync
+- 新規作成ファイル:
+  - `../../src/lib/realtime/client.ts`
+  - `../../src/lib/realtime/channels.ts`
+  - `../../src/lib/realtime/publisher.ts`
+  - `../../src/hooks/useParticipantRealtime.ts`
+  - `../../src/hooks/useRankingRealtime.ts`
+  - `../../src/hooks/useAdminDashboardRealtime.ts`
+- 更新ファイル:
+  - `../../src/hooks/useParticipantRuntime.ts`
+  - `../../src/app(participant)/ranking/page.tsx`
+  - `../../src/app/monitor/ranking/page.tsx`
+- 実装する関数シグネチャ:
+  - `export function createRealtimeClient(): SupabaseClient`
+  - `export function getParticipantChannelName(eventId: string): string`
+  - `export function getRankingChannelName(eventId: string): string`
+  - `export function getAdminChannelName(eventId: string): string`
+  - `export async function publishInvalidation(params: { eventId: string; scopes: Array<'participant' | 'match' | 'ranking' | 'admin'>; participantIds?: string[]; matchId?: string | null; tableId?: string | null }): Promise<void>`
+  - `export function useParticipantRealtime(params: { enabled: boolean; eventId: string; participantId: string; refresh: () => Promise<void> }): void`
+  - `export function useRankingRealtime(params: { enabled: boolean; eventId: string; refresh: () => Promise<void> }): void`
+  - `export function useAdminDashboardRealtime(params: { enabled: boolean; eventId: string; refresh: () => Promise<void> }): void`
+- 実装内容:
+  - Supabase Realtime Broadcast の subscribe / unsubscribe を hook に閉じ込める
+  - channel 名は `event:{eventId}:participant`, `event:{eventId}:match`, `event:{eventId}:ranking`, `event:{eventId}:admin` で統一する
+  - mutation 成功後に server 側から invalidation event を publish する
+  - participant, ranking, admin dashboard は event 受信時だけ read API を再取得する
+  - 接続再確立直後は 1 回だけ再同期する
+  - 常時 polling は行わず、Realtime 断や subscribe 失敗時だけ `30秒` 間隔のフォールバック polling を有効化し、resubscribe 成功時に停止する
 - 完了条件:
   - マッチ成立、開始、結果確定、ランキング更新がリロードなしで反映される
-- 依存関係: `F-003`, `P-005`, `P-007`
+- 依存関係: `P-005`, `P-007`
 - 並列作業メモ: `M-006` と並列可能
+- 推奨 skill:
+  - `freshers-match-match-flow`
+  - `freshers-match-participant-ui`
+- 先に確認するファイル:
+  - `../design/01-state-and-realtime.md`
+  - `../../src/lib/db/client.ts`
+  - `../../src/hooks/useParticipantRuntime.ts`
+- おすすめプロンプト:
+  - `freshers-match-match-flow と freshers-match-participant-ui を使って M-007 を実装してください。Realtime client / channel 定義 / publish helper と useParticipantRealtime, useRankingRealtime, useAdminDashboardRealtime を作り、participant, ranking, admin dashboard の状態同期を Supabase Realtime Broadcast で実現してください。socket event 受信時だけ read API を再取得する構成を基本とし、Realtime 断時のみ `30秒` 間隔のフォールバック polling を有効化して、resubscribe 成功後は停止してください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## M-008 接続切れ判定ヘルパ
 
 - 目的: 接続切れ participant を判定する共通ロジックを作る
 - 担当レイヤー: service helper
 - 新規作成ファイル:
-  - `/Users/kitamurareiki/develop/match/src/lib/domain/disconnect-rules.ts`
-  - `/Users/kitamurareiki/develop/match/src/tests/unit/disconnect-rules.test.ts`
+  - `../../src/lib/domain/disconnect-rules.ts`
+  - `../../src/tests/unit/disconnect-rules.test.ts`
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export function isDisconnected(params: { lastSeenAt: string; now: Date; disconnectThresholdSeconds: number }): boolean`
 - 実装内容:
   - `last_seen_at` と閾値から切断を判定する
+  - 永続化や状態復元はこのタスクに含めず、判定純粋関数だけに責務を絞る
 - 完了条件:
   - 境界値テストが揃う
 - 依存関係: `F-007`
 - 並列作業メモ: `A-002` と並列可能
+- 推奨 skill:
+  - `freshers-match-match-flow`
+  - `freshers-match-testing`
+- 先に確認するファイル:
+  - `../design/00-requirements-and-mvp.md`
+  - `../testing/test-matrix.md`
+  - `../../.codex/skills/freshers-match-testing/references/regression-priority.md`
+- おすすめプロンプト:
+  - `freshers-match-match-flow と freshers-match-testing を使って M-008 を TDD で実装してください。disconnect-rules.ts に last_seen_at と threshold から切断判定する純粋関数を作り、30秒境界と前後ケースを unit test で固定してください。複雑な自動救済は入れず、判定だけに責務を絞ってください。完了時は pnpm format, pnpm lint, pnpm typecheck, pnpm test を実行してください。`
+
+## M-009 切断状態の永続化と復帰責務
+
+- 目的: disconnected の保存・復帰・復旧責務を service レイヤーで固定する
+- 担当レイヤー: service / integration test
+- 新規作成ファイル:
+  - `../../src/lib/services/connection-state-service.ts`
+  - `../../src/tests/integration/connection-state-service.test.ts`
+- 更新ファイル:
+  - `../../src/lib/services/participant-service.ts`
+  - `../../src/lib/services/admin-dashboard-service.ts`
+  - `../../src/lib/services/matching-service.ts`
+- 実装する関数シグネチャ:
+  - `export async function normalizeParticipantConnectionState(params: { participantId: string; now: Date }): Promise<void>`
+  - `export async function restoreDisconnectedParticipantIfNeeded(params: { participantId: string }): Promise<void>`
+- 実装内容:
+  - `last_seen_at` 超過時に `status='disconnected'` へ永続化する
+  - `disconnected` へ遷移させる直前の状態だけ `last_non_disconnect_status` に保存する
+  - 既に `disconnected` の participant が再接続したら `last_non_disconnect_status` へ戻す
+  - admin dashboard 取得前と participant session restore / me 取得前に整合性補正をかける
+- 完了条件:
+  - 切断判定後に dashboard と participant 復元で同じ状態解釈になる
+  - `last_non_disconnect_status` が不要に上書きされない
+- 依存関係: `M-008`, `P-001`
+- 並列作業メモ: `A-002` と密接なので担当を分ける場合は API 側と service 側で分担する
+- 推奨 skill:
+  - `freshers-match-match-flow`
+  - `freshers-match-testing`
+- 先に確認するファイル:
+  - `../design/01-state-and-realtime.md`
+  - `../design/03-admin-ops-and-failures.md`
+  - `../testing/test-matrix.md`
+- おすすめプロンプト:
+  - `freshers-match-match-flow と freshers-match-testing を使って M-009 を実装してください。connection-state-service.ts を追加し、disconnect 判定後の status 永続化、last_non_disconnect_status 更新条件、再接続時の状態復元責務を service にまとめてください。participant restore / me と admin dashboard の両方で同じ整合性ルールを使うようにし、integration test で切断・復帰ケースを固定してください。完了時は pnpm format, pnpm lint, pnpm typecheck, pnpm test を実行してください。`
