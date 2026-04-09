@@ -1,8 +1,8 @@
 interface:
   display_name: "Freshers Match Admin UI"
-  short_description: "Desktop admin and ranking monitor surfaces"
+  short_description: "Desktop admin dashboard, recovery, and monitor UI"
   brand_color: "#1A1A1A"
-  default_prompt: "Use $freshers-match-admin-ui to build or refine the desktop operator dashboard, management screens, and ranking monitor."
+  default_prompt: "Use $freshers-match-admin-ui to build or refine the desktop operator dashboard, recovery flows, management screens, and ranking monitor."
 
 policy:
   allow_implicit_invocation: true

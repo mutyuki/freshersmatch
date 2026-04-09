@@ -1,6 +1,6 @@
 ---
 name: freshers-match-overview
-description: Use when working on the freshman welcome 1v1 card-game matching web app in this repository. Applies the fixed product constraints, document map, architecture boundaries, implementation order, and no-scope-creep rules before coding or planning.
+description: Use when working on the freshman welcome 1v1 event matching and chip-tracking web app in this repository. Applies the fixed product constraints, document map, architecture boundaries, implementation order, and no-scope-creep rules before coding or planning.
 ---
 
 # Freshers Match Overview

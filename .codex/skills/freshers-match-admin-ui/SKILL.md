@@ -1,6 +1,6 @@
 ---
 name: freshers-match-admin-ui
-description: Use when building the operator-facing admin and monitor interfaces for the freshman welcome matching app. Covers desktop-first dashboard layout, recovery actions, participant control, table control, and ranking monitor views.
+description: Use when building the operator-facing admin and monitor interfaces for the freshman welcome matching app. Covers desktop-first dashboards, match recovery actions, participant and table controls, and ranking monitor views.
 ---
 
 # Freshers Match Admin UI

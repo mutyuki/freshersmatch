@@ -1,8 +1,8 @@
 interface:
   display_name: "Freshers Match Overview"
-  short_description: "Guardrails for the whole event app"
+  short_description: "Guardrails for the event matching app"
   brand_color: "#D4916E"
-  default_prompt: "Use $freshers-match-overview to orient yourself before changing architecture, scope, or implementation order."
+  default_prompt: "Use $freshers-match-overview to orient yourself before changing product scope, architecture, or implementation order."
 
 policy:
   allow_implicit_invocation: true
