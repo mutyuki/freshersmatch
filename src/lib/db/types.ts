@@ -35,6 +35,7 @@ export interface Database {
           id: string;
           name: string;
           venue_code: string;
+          initial_chip_balance: number;
           fixed_bet_amount: number;
           staff_match_wait_seconds: number;
           disconnect_threshold_seconds: number;
@@ -46,6 +47,7 @@ export interface Database {
           id?: string;
           name: string;
           venue_code: string;
+          initial_chip_balance: number;
           fixed_bet_amount: number;
           staff_match_wait_seconds?: number;
           disconnect_threshold_seconds?: number;
@@ -67,8 +69,6 @@ export interface Database {
           last_opponent_participant_id: string | null;
           queued_at: string | null;
           last_seen_at: string;
-          is_paused: boolean;
-          is_disqualified: boolean;
           disqualified_reason: string | null;
           created_at: string;
           updated_at: string;
@@ -84,8 +84,6 @@ export interface Database {
           last_opponent_participant_id?: string | null;
           queued_at?: string | null;
           last_seen_at?: string;
-          is_paused?: boolean;
-          is_disqualified?: boolean;
           disqualified_reason?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -150,7 +148,10 @@ export interface Database {
           staff_operator_id: string | null;
           player1_ready_at: string | null;
           player2_ready_at: string | null;
+          started_at: string | null;
           agreed_bet_amount: number | null;
+          dispute_count: number;
+          last_disputed_at: string | null;
           winner_participant_id: string | null;
           winner_claimed_by_participant_id: string | null;
           winner_claimed_at: string | null;
@@ -171,7 +172,10 @@ export interface Database {
           staff_operator_id?: string | null;
           player1_ready_at?: string | null;
           player2_ready_at?: string | null;
+          started_at?: string | null;
           agreed_bet_amount?: number | null;
+          dispute_count?: number;
+          last_disputed_at?: string | null;
           winner_participant_id?: string | null;
           winner_claimed_by_participant_id?: string | null;
           winner_claimed_at?: string | null;
@@ -229,7 +233,76 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      acknowledge_result_confirmed: {
+        Args: { p_participant_id: string };
+        Returns: { participant_status: ParticipantStatus }[];
+      };
+      adjust_participant_chip: {
+        Args: {
+          p_admin_user_id: string;
+          p_participant_id: string;
+          p_delta: number;
+          p_reason: string;
+        };
+        Returns: { new_balance: number }[];
+      };
+      approve_match_result: {
+        Args: { p_participant_id: string; p_match_id: string; p_approve: boolean };
+        Returns: { match_status: MatchStatus; dispute_count: number }[];
+      };
+      cancel_match_before_start: {
+        Args: { p_participant_id: string; p_match_id: string };
+        Returns: { match_status: MatchStatus }[];
+      };
+      cancel_queue: {
+        Args: { p_participant_id: string };
+        Returns: { participant_status: ParticipantStatus }[];
+      };
+      claim_match_win: {
+        Args: { p_participant_id: string; p_match_id: string };
+        Returns: { match_status: MatchStatus }[];
+      };
+      ready_match: {
+        Args: { p_participant_id: string; p_match_id: string };
+        Returns: {
+          match_status: MatchStatus;
+          participant_status: ParticipantStatus;
+          agreed_bet_amount: number | null;
+          started_at: string | null;
+        }[];
+      };
+      register_participant_and_issue_session: {
+        Args: { p_venue_code: string; p_nickname: string; p_session_token_hash: string };
+        Returns: {
+          participant_id: string;
+          event_id: string;
+          session_id: string;
+          chip_balance: number;
+        }[];
+      };
+      resolve_match_by_admin: {
+        Args: {
+          p_admin_user_id: string;
+          p_match_id: string;
+          p_resolution_type: string;
+          p_winner_participant_id: string | null;
+        };
+        Returns: { match_status: MatchStatus }[];
+      };
+      resolve_staff_match: {
+        Args: { p_admin_user_id: string; p_match_id: string; p_participant_won: boolean };
+        Returns: { match_status: MatchStatus }[];
+      };
+      start_queue_and_try_match: {
+        Args: { p_participant_id: string };
+        Returns: { match_id: string | null; participant_status: ParticipantStatus }[];
+      };
+      start_staff_match: {
+        Args: { p_admin_user_id: string; p_participant_id: string; p_table_id: string | null };
+        Returns: { match_id: string }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

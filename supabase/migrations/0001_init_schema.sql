@@ -3,6 +3,7 @@ create extension if not exists pgcrypto;
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.updated_at = timezone('utc', now());
@@ -14,7 +15,8 @@ create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   venue_code text not null unique,
-  fixed_bet_amount integer not null check (fixed_bet_amount >= 0),
+  initial_chip_balance integer not null check (initial_chip_balance >= 0),
+  fixed_bet_amount integer not null check (fixed_bet_amount >= 1),
   staff_match_wait_seconds integer not null default 90 check (staff_match_wait_seconds >= 0),
   disconnect_threshold_seconds integer not null default 30 check (disconnect_threshold_seconds >= 1),
   status text not null default 'draft' check (status in ('draft', 'active', 'closed')),
@@ -34,8 +36,8 @@ create table if not exists public.admin_users (
 create table if not exists public.matches (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references public.events(id) on delete cascade,
-  table_id uuid,
-  player1_participant_id uuid,
+  table_id uuid not null,
+  player1_participant_id uuid not null,
   player2_participant_id uuid,
   status text not null default 'reserved' check (
     status in (
@@ -53,7 +55,10 @@ create table if not exists public.matches (
   staff_operator_id uuid references public.admin_users(id) on delete set null,
   player1_ready_at timestamptz,
   player2_ready_at timestamptz,
-  agreed_bet_amount integer check (agreed_bet_amount >= 0),
+  started_at timestamptz,
+  agreed_bet_amount integer check (agreed_bet_amount >= 1),
+  dispute_count integer not null default 0 check (dispute_count >= 0),
+  last_disputed_at timestamptz,
   winner_participant_id uuid,
   winner_claimed_by_participant_id uuid,
   winner_claimed_at timestamptz,
@@ -61,7 +66,28 @@ create table if not exists public.matches (
   cancelled_by_participant_id uuid,
   void_reason text,
   created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now())
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint matches_player_shape_check check (
+    (is_staff_match = false and player2_participant_id is not null and staff_operator_id is null) or
+    (is_staff_match = true and player2_participant_id is null and staff_operator_id is not null)
+  ),
+  constraint matches_started_and_bet_consistency_check check (
+    (
+      status in ('reserved', 'awaiting_ready', 'cancelled_before_start')
+      and started_at is null
+      and agreed_bet_amount is null
+    ) or (
+      status in ('in_progress', 'winner_claimed', 'completed', 'force_finished_by_admin')
+      and started_at is not null
+      and agreed_bet_amount is not null
+    ) or (
+      status = 'voided_by_admin'
+      and (
+        (started_at is null and agreed_bet_amount is null) or
+        (started_at is not null and agreed_bet_amount is not null)
+      )
+    )
+  )
 );
 
 create table if not exists public.participants (
@@ -104,11 +130,13 @@ create table if not exists public.participants (
   last_opponent_participant_id uuid,
   queued_at timestamptz,
   last_seen_at timestamptz not null default timezone('utc', now()),
-  is_paused boolean not null default false,
-  is_disqualified boolean not null default false,
   disqualified_reason text,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
+  constraint participants_disqualified_reason_check check (
+    (status = 'disqualified' and disqualified_reason is not null) or
+    (status <> 'disqualified' and disqualified_reason is null)
+  ),
   unique (event_id, nickname)
 );
 
@@ -162,7 +190,7 @@ begin
   ) then
     alter table public.matches
       add constraint matches_table_id_fkey
-      foreign key (table_id) references public.tables(id) on delete set null;
+      foreign key (table_id) references public.tables(id) on delete restrict;
   end if;
 end
 $$;
@@ -174,7 +202,7 @@ begin
   ) then
     alter table public.matches
       add constraint matches_player1_participant_id_fkey
-      foreign key (player1_participant_id) references public.participants(id) on delete set null;
+      foreign key (player1_participant_id) references public.participants(id) on delete restrict;
   end if;
 end
 $$;
@@ -242,6 +270,23 @@ $$;
 create unique index if not exists participant_sessions_one_active_session_idx
   on public.participant_sessions (participant_id)
   where is_active = true;
+
+create unique index if not exists events_one_active_event_idx
+  on public.events (status)
+  where status = 'active';
+
+create unique index if not exists matches_one_active_player1_idx
+  on public.matches (player1_participant_id)
+  where status in ('reserved', 'awaiting_ready', 'in_progress', 'winner_claimed');
+
+create unique index if not exists matches_one_active_player2_idx
+  on public.matches (player2_participant_id)
+  where player2_participant_id is not null
+    and status in ('reserved', 'awaiting_ready', 'in_progress', 'winner_claimed');
+
+create unique index if not exists matches_one_active_table_idx
+  on public.matches (table_id)
+  where status in ('reserved', 'awaiting_ready', 'in_progress', 'winner_claimed');
 
 create index if not exists participants_status_idx on public.participants (event_id, status);
 create index if not exists participants_queue_idx on public.participants (event_id, queued_at);

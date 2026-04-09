@@ -2,6 +2,7 @@ insert into public.events (
   id,
   name,
   venue_code,
+  initial_chip_balance,
   fixed_bet_amount,
   staff_match_wait_seconds,
   disconnect_threshold_seconds,
@@ -11,6 +12,7 @@ values (
   '11111111-1111-1111-1111-111111111111',
   'Freshers Welcome Match',
   'MATCH2026',
+  500,
   120,
   90,
   30,
@@ -20,6 +22,7 @@ on conflict (id) do update
 set
   name = excluded.name,
   venue_code = excluded.venue_code,
+  initial_chip_balance = excluded.initial_chip_balance,
   fixed_bet_amount = excluded.fixed_bet_amount,
   staff_match_wait_seconds = excluded.staff_match_wait_seconds,
   disconnect_threshold_seconds = excluded.disconnect_threshold_seconds,

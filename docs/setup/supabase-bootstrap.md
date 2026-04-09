@@ -15,13 +15,11 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 ## 初回投入で使うファイル
 
 - スキーマ: [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql)
-- 追補スキーマ: [`supabase/migrations/0002_align_schema_with_guardrails.sql`](../../supabase/migrations/0002_align_schema_with_guardrails.sql)
 - 初期データ: [`supabase/seed.sql`](../../supabase/seed.sql)
 
 補足:
 
-- `0001` はテーブルと主要制約を作るベーススキーマです
-- `0002` は guardrail 整合のための追補です（`matches_started_and_bet_consistency_check` などの制約再定義を含む）。fresh setup でも必ず順番に実行してください
+- `0001` はテーブル、主要制約、guardrail 整合まで含んだ初期スキーマです
 - 今後の RPC 実装などは `0003` 以降の別 migration として追加し、既存 schema migration を書き換えない前提で進めます
 
 ## 手順 1: migration を流す
@@ -32,9 +30,6 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 4. `New query` を押す
 5. [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql) の中身を全部貼る
 6. `Run` を押す
-7. 続けて新しい `New query` を開く
-8. [`supabase/migrations/0002_align_schema_with_guardrails.sql`](../../supabase/migrations/0002_align_schema_with_guardrails.sql) の中身を全部貼る
-9. `Run` を押す
 
 成功したら、以下のテーブルが作成されます。
 
@@ -140,8 +135,8 @@ pnpm admin:hash 1234
 
 ### すでに 0001 を流したあとで schema を更新したい
 
-- その場合は `0001` を流し直さず、[`supabase/migrations/0002_align_schema_with_guardrails.sql`](../../supabase/migrations/0002_align_schema_with_guardrails.sql) だけを実行してください
-- この追補 migration は、docs と schema の guardrail を同期するためのものです（制約の再定義を含むため no-op ではありません）
+- 既存 schema を編集して上書きするのではなく、新しい migration を `0003` 以降に追加してください
+- 既存環境に差分を反映するときは、その新しい migration だけを順番どおり適用してください
 
 ### `RLS Disabled in Public` と出る
 

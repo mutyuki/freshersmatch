@@ -119,7 +119,7 @@
   - `participants` に `is_paused`, `is_disqualified` を持たせず、`status` を真実源にする
   - 通常戦 / 運営戦の整合制約を `matches` に入れる
   - `participant_sessions` に `partial unique index (participant_id) where is_active = true` を入れる
-  - `0001` でベーススキーマを作成し、`0002` で guardrail 整合（制約の再定義を含む）を適用する前提で運用する
+  - `matches_started_and_bet_consistency_check` を含む guardrail も `0001` に入れる
 - 完了条件:
   - マイグレーション適用で全テーブルが作成される
 - 依存関係: `F-003`
@@ -602,5 +602,4 @@
   - `../../src/lib/auth/admin-session.ts`
 - おすすめプロンプト:
   - `freshers-match-admin-ui を使って F-016 を実装してください。admin/layout.tsx, AdminShell, AdminNav を作り、max-w-7xl のデスクトップ前提レイアウトでダッシュボード・参加者・試合・卓ページへのナビゲーションを整備してください。admin session がなければ /admin/login へリダイレクトしてください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
-
 
