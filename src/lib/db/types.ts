@@ -1,29 +1,13 @@
+import type { MatchStatus as DomainMatchStatus } from "@/lib/domain/match-status";
+import type { ParticipantStatus as DomainParticipantStatus } from "@/lib/domain/participant-status";
+import type { TableStatus as DomainTableStatus } from "@/lib/domain/table-status";
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type EventStatus = "draft" | "active" | "closed";
-export type ParticipantStatus =
-  | "unregistered"
-  | "registered"
-  | "queueing"
-  | "match_reserved"
-  | "ready"
-  | "playing"
-  | "claiming_win"
-  | "awaiting_result_approval"
-  | "result_confirmed"
-  | "paused"
-  | "disqualified"
-  | "disconnected";
-export type TableStatus = "available" | "reserved" | "in_use" | "admin_hold";
-export type MatchStatus =
-  | "reserved"
-  | "awaiting_ready"
-  | "in_progress"
-  | "winner_claimed"
-  | "completed"
-  | "cancelled_before_start"
-  | "voided_by_admin"
-  | "force_finished_by_admin";
+export type ParticipantStatus = DomainParticipantStatus;
+export type TableStatus = DomainTableStatus;
+export type MatchStatus = DomainMatchStatus;
 export type ChipLedgerReason = "match_bet" | "match_payout" | "admin_adjustment" | "rollback";
 export type AdminRole = "staff" | "admin";
 

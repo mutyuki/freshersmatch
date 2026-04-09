@@ -84,11 +84,12 @@
 - 更新ファイル: なし
 - 実装する関数シグネチャ:
   - `export function getSupabaseBrowserClient(): SupabaseClient<Database>`
-  - `export function getSupabaseServerClient(): SupabaseClient<Database>`
+  - `export async function getSupabaseServerClient(): Promise<SupabaseClient<Database>>`
+  - `export function getSupabaseAdminClient(): SupabaseClient<Database>`
   - `export function getRequiredEnv(name: string): string`
 - 実装内容:
   - 環境変数を安全に読む
-  - ブラウザ用とサーバー用のクライアントを分ける
+  - ブラウザ用、サーバー cookie 文脈用、service-role 用のクライアントを分ける
 - 完了条件:
   - サーバーから Supabase クライアントが import できる
 - 依存関係: `F-001`
@@ -120,6 +121,7 @@
   - 通常戦 / 運営戦の整合制約を `matches` に入れる
   - `participant_sessions` に `partial unique index (participant_id) where is_active = true` を入れる
   - `matches_started_and_bet_consistency_check` を含む guardrail も `0001` に入れる
+  - RLS は全 `public` テーブルで有効化し、初期段階では anon 公開 policy は作らずに安全側へ倒す
 - 完了条件:
   - マイグレーション適用で全テーブルが作成される
 - 依存関係: `F-003`
@@ -602,4 +604,3 @@
   - `../../src/lib/auth/admin-session.ts`
 - おすすめプロンプト:
   - `freshers-match-admin-ui を使って F-016 を実装してください。admin/layout.tsx, AdminShell, AdminNav を作り、max-w-7xl のデスクトップ前提レイアウトでダッシュボード・参加者・試合・卓ページへのナビゲーションを整備してください。admin session がなければ /admin/login へリダイレクトしてください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
-

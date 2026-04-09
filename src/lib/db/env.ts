@@ -6,7 +6,11 @@ const REQUIRED_ENV_NAMES = [
 
 export type RequiredEnvName = (typeof REQUIRED_ENV_NAMES)[number];
 
-export function getRequiredEnv(name: RequiredEnvName): string {
+export function isRequiredEnvName(value: string): value is RequiredEnvName {
+  return REQUIRED_ENV_NAMES.includes(value as RequiredEnvName);
+}
+
+export function getRequiredEnv(name: string): string {
   const value = process.env[name];
 
   if (!value) {
