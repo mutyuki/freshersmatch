@@ -1,7 +1,7 @@
 const PARTICIPANT_SESSION_TOKEN_KEY = "freshers-match.participant-session-token";
 
 export function saveParticipantSessionToken(token: string): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || typeof window.localStorage?.setItem !== "function") {
     return;
   }
 
@@ -9,7 +9,7 @@ export function saveParticipantSessionToken(token: string): void {
 }
 
 export function getParticipantSessionToken(): string | null {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || typeof window.localStorage?.getItem !== "function") {
     return null;
   }
 
@@ -17,7 +17,7 @@ export function getParticipantSessionToken(): string | null {
 }
 
 export function clearParticipantSessionToken(): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || typeof window.localStorage?.removeItem !== "function") {
     return;
   }
 

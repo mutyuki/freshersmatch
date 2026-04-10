@@ -1,10 +1,19 @@
+"use client";
+
 import type { JSX, ReactNode } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { useParticipantHeartbeat } from "@/hooks/useParticipantHeartbeat";
 import { cn } from "@/lib/utils";
 
-export function ParticipantShell(props: { title: string; children: ReactNode }): JSX.Element {
-  const { title, children } = props;
+export function ParticipantShell(props: {
+  title: string;
+  children: ReactNode;
+  heartbeatEnabled?: boolean;
+}): JSX.Element {
+  const { title, children, heartbeatEnabled = false } = props;
+
+  useParticipantHeartbeat(heartbeatEnabled);
 
   return (
     <main className="flex min-h-full flex-col">

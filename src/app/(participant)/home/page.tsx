@@ -42,7 +42,7 @@ export default function HomePage(): JSX.Element {
   }
 
   return (
-    <ParticipantShell title="次の一戦へ進む準備">
+    <ParticipantShell title="次の一戦へ進む準備" heartbeatEnabled={true}>
       <HomePanel runtime={state} />
     </ParticipantShell>
   );

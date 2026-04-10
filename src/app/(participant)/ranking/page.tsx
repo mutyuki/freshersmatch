@@ -99,7 +99,7 @@ export default function ParticipantRankingPage(): JSX.Element {
   }
 
   return (
-    <ParticipantShell title="いまの順位を見つける">
+    <ParticipantShell title="いまの順位を見つける" heartbeatEnabled={true}>
       <div className="space-y-5">
         <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm leading-6 text-stone-700">
           自分の行を目で追いやすいように強調表示しています。現在の所持チップと順位を確認して、次の一戦の目標を決めましょう。
