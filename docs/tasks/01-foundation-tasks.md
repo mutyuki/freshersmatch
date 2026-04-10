@@ -113,13 +113,14 @@
 - 更新ファイル: なし
 - 実装する関数シグネチャ: なし
 - 実装内容:
-  - `events`, `participants`, `participant_sessions`, `tables`, `matches`, `chip_ledger`, `admin_users` を作る
+  - `events`, `participants`, `participant_sessions`, `admin_sessions`, `tables`, `matches`, `chip_ledger`, `admin_users` を作る
   - 主キー、外部キー、unique 制約、index を設計書通りに定義する
   - `status` 系の check 制約を入れる
   - `events.initial_chip_balance` を持たせる
   - `participants` に `is_paused`, `is_disqualified` を持たせず、`status` を真実源にする
   - 通常戦 / 運営戦の整合制約を `matches` に入れる
   - `participant_sessions` に `partial unique index (participant_id) where is_active = true` を入れる
+  - `admin_sessions` は同一 `admin_user_id` の複数 active session を許容しつつ、有効期限と current session invalidation を扱えるようにする
   - `matches_started_and_bet_consistency_check` を含む guardrail も `0001` に入れる
   - RLS は全 `public` テーブルで有効化し、初期段階では anon 公開 policy は作らずに安全側へ倒す
 - 完了条件:
@@ -135,7 +136,7 @@
   - `../../supabase/migrations/0001_init_schema.sql`
   - `../../.codex/skills/freshers-match-match-flow/references/state-machine.md`
 - おすすめプロンプト:
-  - `freshers-match-db-api と freshers-match-match-flow を使って F-004 を実装してください。supabase/migrations/0001_init_schema.sql を対象に、events, participants, participant_sessions, tables, matches, chip_ledger, admin_users を設計書どおり作成してください。status 系 check 制約、外部キー、index、RLS の方針も反映し、再実行で落ちにくい migration にしてください。完了時は SQL の整合性を見直し、pnpm format, pnpm lint, pnpm typecheck を実行してください。`
+  - `freshers-match-db-api と freshers-match-match-flow を使って F-004 を実装してください。supabase/migrations/0001_init_schema.sql を対象に、events, participants, participant_sessions, admin_sessions, tables, matches, chip_ledger, admin_users を設計書どおり作成してください。status 系 check 制約、外部キー、index、RLS の方針も反映し、再実行で落ちにくい migration にしてください。完了時は SQL の整合性を見直し、pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## F-005 seed データ作成
 
@@ -376,10 +377,14 @@
   - `export async function requireAdminSession(): Promise<{ adminUserId: string }>`
   - `export async function clearAdminSession(): Promise<void>`
 - 実装内容:
-  - httpOnly cookie ベースで運営セッションを作る
-  - 署名・有効期限・secure 属性を備え、参加者セッションと完全に分離する
+  - httpOnly cookie ベースで運営セッションを扱う
+  - cookie にはランダムな admin session token を保持し、正本は `admin_sessions` に置く
+  - token 生成、hash 化、verify、current session invalidation、cookie set / clear を実装する
+  - `admin_sessions` の有効性は `session_token_hash`, `is_active`, `expires_at`, `admin_user_id` 解決で判定する
+  - 同一 `admin_user` の複数同時ログインを阻害しない
 - 完了条件:
   - 運営APIで共通利用できる
+  - current browser の logout が他端末の admin session を巻き込まない
 - 依存関係: `F-001`
 - 並列作業メモ: `F-011` と並列可能
 - 推奨 skill:
@@ -390,7 +395,7 @@
   - `../../src/app/layout.tsx`
   - `../../.codex/skills/freshers-match-admin-ui/references/operator-actions.md`
 - おすすめプロンプト:
-  - `freshers-match-db-api と freshers-match-admin-ui を使って F-012 を実装してください。admin-session.ts に httpOnly cookie ベースの運営セッションを作成し、署名・有効期限・secure 属性を備えた require / create / clear 関数を定義してください。参加者セッションと責務を混ぜないでください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
+  - `freshers-match-db-api と freshers-match-admin-ui を使って F-012 を実装してください。admin-session.ts に DB-backed な運営セッション helper を実装し、httpOnly cookie に保持する admin session token の発行、hash 化、verify、current session invalidation、cookie set / clear を定義してください。admin_sessions を正本とし、同一 admin_user の複数同時ログインを許可してください。参加者セッションと責務を混ぜないでください。完了時は pnpm format, pnpm lint, pnpm typecheck を実行してください。`
 
 ## F-013a 参加者系 RPC 実装
 

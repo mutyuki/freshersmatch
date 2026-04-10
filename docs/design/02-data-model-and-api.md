@@ -2,14 +2,15 @@
 
 ## 1. データモデル概要
 
-MVPで最低限必要な永続データは以下の6系統。
+MVPで最低限必要な永続データは以下の7系統。
 
 1. イベント設定
 2. 参加者
 3. 参加者セッション
-4. 卓
-5. 試合
-6. チップ台帳
+4. 運営セッション
+5. 卓
+6. 試合
+7. チップ台帳
 
 将来拡張として監査ログを差し込みやすくする。
 
@@ -18,10 +19,11 @@ MVPで最低限必要な永続データは以下の6系統。
 1. `events`
 2. `participants`
 3. `participant_sessions`
-4. `tables`
-5. `matches`
-6. `chip_ledger`
-7. `admin_users`
+4. `admin_sessions`
+5. `tables`
+6. `matches`
+7. `chip_ledger`
+8. `admin_users`
 
 任意追加:
 
@@ -82,6 +84,27 @@ MVPで最低限必要な永続データは以下の6系統。
 
 - 参加者ごとに `is_active=true` は常に1件のみ
 - DB では `partial unique index (participant_id) where is_active = true` を必須にする
+
+### `admin_sessions`
+
+| カラム | 型 | 用途 |
+| --- | --- | --- |
+| `id` | uuid | セッションID |
+| `admin_user_id` | uuid | 対象運営ユーザー |
+| `session_token_hash` | text | トークンハッシュ |
+| `is_active` | boolean | 現在有効か |
+| `issued_at` | timestamptz | 発行時刻 |
+| `expires_at` | timestamptz | 有効期限 |
+| `invalidated_at` | timestamptz nullable | 無効化時刻 |
+| `last_seen_at` | timestamptz | 最終アクセス |
+
+運用ルール:
+
+- cookie には `admin_user_id` を直書きせず、ランダムな opaque token を保持する
+- API 側では token を hash 化して `admin_sessions` を参照し、`admin_user_id` を解決する
+- `is_active=true` かつ `expires_at > now()` の row のみ有効とする
+- 同一 `admin_user_id` に複数 `is_active=true` を許可し、複数端末・複数ブラウザからの同時ログインを阻害しない
+- ログアウトは current browser の session row のみ `is_active=false` とし、他端末の session は残す
 
 ### `tables`
 
@@ -316,14 +339,17 @@ MVPでは参加者セッションを以下で固定する。
 運営セッションは以下で固定する。
 
 1. 運営セッションは httpOnly cookie で保持する
-2. ログアウトは `POST /api/admin/logout` で cookie を削除する
-3. admin API は cookie から admin session を解決する
+2. cookie の中身は `adminUserId` ではなくランダムな session token にする
+3. admin API は cookie から session token を読み、hash 照合で `admin_sessions` を引いて admin session を解決する
+4. `POST /api/admin/login` は `admin_users.passcode_hash` 照合後に `admin_sessions` row を発行し、cookie を設定する
+5. `POST /api/admin/logout` は current session row を無効化し、cookie を削除する
 
 理由:
 
 - QR 起点のスマホ Web アプリで扱いやすい
 - 実装者ごとに cookie / localStorage の方式が割れない
 - Realtime invalidation 後の再同期実装を単純に保てる
+- 複数運営者や同一運営の複数端末ログインを許可しつつ、現在セッションだけを個別に無効化できる
 
 ## 5.5 単一イベント前提の API スコープ
 

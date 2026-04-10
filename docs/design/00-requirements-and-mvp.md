@@ -26,15 +26,16 @@
 1. 会場コードはイベント単位で1つ発行し、参加者登録時に照合する。
 2. 1ユーザー1セッションは `participant_sessions` の `is_active=true` を `participant_id` ごとに1行まで許可する方式で実現する（参加者レコードにセッショントークンIDは持たない）。
 3. 再読み込み復帰は「セッショントークン + 現在の participant_state / current_match_id を読んで復元する」方式とする。
-4. 卓の「仮予約」は、マッチ確定から試合解消または開始までの短い占有状態を指す。
-5. 初期チップ配布量はイベント設定として持ち、参加登録時に `participants.chip_balance` へ反映する。MVPでは `events.initial_chip_balance` を必須カラムにする。
-6. 運営戦は「運営アカウント自身が卓に入る」のではなく、「運営側の仮想対戦相手レコード」を使わず、match に `is_staff_match=true` と `staff_operator_id` を持たせる方式とする。チップ記録は参加者側の増減のみとし、結果確定は運営側が行う。
-7. 同順位は `chip_balance DESC, created_at ASC, participant_id ASC` の順で安定ソートする。`updated_at` は heartbeat や状態変更で動くため、タイブレークに使わない。
-8. 30秒切断判定はリアルタイム接続のハートビートではなく、`last_seen_at` のサーバー更新時刻で判定する。
-9. 画面同期は WebSocket ベースの Realtime を基本とし、短周期 polling を常用しない。ブラウザは Supabase Realtime Broadcast を購読し、イベント受信時だけ認証済み API を再取得して最新状態へ追従する。
-10. マッチングは厳密な常時自動探索ではなく、「待機キュー変更時にサーバーが都度再計算する」方式で十分とする。
-11. 0チップ救済はMVP対象外とし、DB拡張しやすい位置だけ残す。
-12. 参加者の一時停止・失格は `participants.status` を唯一の真実源とし、`is_paused` や `is_disqualified` のような重複フラグは持たない。
+4. 運営もセッションを持つが、こちらは `admin_sessions` を正本とする DB-backed session とし、同一 `admin_user` の複数同時ログインを許可する。
+5. 卓の「仮予約」は、マッチ確定から試合解消または開始までの短い占有状態を指す。
+6. 初期チップ配布量はイベント設定として持ち、参加登録時に `participants.chip_balance` へ反映する。MVPでは `events.initial_chip_balance` を必須カラムにする。
+7. 運営戦は「運営アカウント自身が卓に入る」のではなく、「運営側の仮想対戦相手レコード」を使わず、match に `is_staff_match=true` と `staff_operator_id` を持たせる方式とする。チップ記録は参加者側の増減のみとし、結果確定は運営側が行う。
+8. 同順位は `chip_balance DESC, created_at ASC, participant_id ASC` の順で安定ソートする。`updated_at` は heartbeat や状態変更で動くため、タイブレークに使わない。
+9. 30秒切断判定はリアルタイム接続のハートビートではなく、`last_seen_at` のサーバー更新時刻で判定する。
+10. 画面同期は WebSocket ベースの Realtime を基本とし、短周期 polling を常用しない。ブラウザは Supabase Realtime Broadcast を購読し、イベント受信時だけ認証済み API を再取得して最新状態へ追従する。
+11. マッチングは厳密な常時自動探索ではなく、「待機キュー変更時にサーバーが都度再計算する」方式で十分とする。
+12. 0チップ救済はMVP対象外とし、DB拡張しやすい位置だけ残す。
+13. 参加者の一時停止・失格は `participants.status` を唯一の真実源とし、`is_paused` や `is_disqualified` のような重複フラグは持たない。
 
 ## 3. MVPの範囲
 

@@ -95,6 +95,29 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["participant_sessions"]["Insert"]>;
       };
+      admin_sessions: {
+        Row: {
+          id: string;
+          admin_user_id: string;
+          session_token_hash: string;
+          is_active: boolean;
+          issued_at: string;
+          expires_at: string;
+          invalidated_at: string | null;
+          last_seen_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id: string;
+          session_token_hash: string;
+          is_active?: boolean;
+          issued_at?: string;
+          expires_at: string;
+          invalidated_at?: string | null;
+          last_seen_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_sessions"]["Insert"]>;
+      };
       tables: {
         Row: {
           id: string;

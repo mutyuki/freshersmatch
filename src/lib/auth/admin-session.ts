@@ -1,37 +1,59 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 import { cookies } from "next/headers";
 
-import { getRequiredEnv } from "@/lib/db/env";
+import { getSupabaseAdminClient } from "@/lib/db/server";
+import type { Database } from "@/lib/db/types";
 import { AppError } from "@/lib/domain/errors";
 
 const ADMIN_SESSION_COOKIE_NAME = "freshers_match_admin_session";
 const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
 const ADMIN_SESSION_TTL_MS = ADMIN_SESSION_TTL_SECONDS * 1000;
 
-type AdminSessionPayload = {
-  adminUserId: string;
-  expiresAt: number;
+type AdminSessionLookup = Pick<
+  Database["public"]["Tables"]["admin_sessions"]["Row"],
+  "id" | "admin_user_id" | "is_active" | "expires_at"
+>;
+type AdminSessionInsert = Database["public"]["Tables"]["admin_sessions"]["Insert"];
+type AdminSessionUpdate = Pick<
+  Database["public"]["Tables"]["admin_sessions"]["Update"],
+  "is_active" | "invalidated_at"
+>;
+type AdminSessionInsertQuery = {
+  insert(values: AdminSessionInsert): Promise<{
+    data: null;
+    error: { message: string } | null;
+  }>;
 };
-
-function isAdminSessionPayload(payload: unknown): payload is AdminSessionPayload {
-  if (typeof payload !== "object" || payload === null) {
-    return false;
-  }
-
-  const candidate = payload as Record<string, unknown>;
-
-  return (
-    typeof candidate.adminUserId === "string" &&
-    candidate.adminUserId.length > 0 &&
-    typeof candidate.expiresAt === "number" &&
-    Number.isFinite(candidate.expiresAt)
-  );
-}
-
-function getAdminSessionSecret(): string {
-  return getRequiredEnv("ADMIN_SESSION_SECRET");
-}
+type AdminSessionSelectQuery = {
+  select(columns: "id, admin_user_id, is_active, expires_at"): {
+    eq(
+      column: "session_token_hash",
+      value: string,
+    ): {
+      maybeSingle(): Promise<{
+        data: AdminSessionLookup | null;
+        error: { message: string } | null;
+      }>;
+    };
+  };
+};
+type AdminSessionUpdateQuery = {
+  update(values: AdminSessionUpdate): {
+    eq(
+      column: "session_token_hash",
+      value: string,
+    ): {
+      eq(
+        column: "is_active",
+        value: true,
+      ): Promise<{
+        data: null;
+        error: { message: string } | null;
+      }>;
+    };
+  };
+};
 
 function getAdminSessionCookieOptions(expires: Date) {
   return {
@@ -44,64 +66,49 @@ function getAdminSessionCookieOptions(expires: Date) {
   };
 }
 
-function createAdminSessionSignature(payloadBase64: string): string {
-  return createHmac("sha256", getAdminSessionSecret()).update(payloadBase64).digest("base64url");
+function getAdminSessionsInsertQuery(): AdminSessionInsertQuery {
+  return getSupabaseAdminClient().from("admin_sessions") as unknown as AdminSessionInsertQuery;
 }
 
-function encodeAdminSessionValue(payload: AdminSessionPayload): string {
-  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = createAdminSessionSignature(payloadBase64);
-
-  return `${payloadBase64}.${signature}`;
+function getAdminSessionsSelectQuery(): AdminSessionSelectQuery {
+  return getSupabaseAdminClient().from("admin_sessions") as unknown as AdminSessionSelectQuery;
 }
 
-function decodeAdminSessionValue(rawCookieValue: string): AdminSessionPayload {
-  const [payloadBase64, signature, ...rest] = rawCookieValue.split(".");
+function getAdminSessionsUpdateQuery(): AdminSessionUpdateQuery {
+  return getSupabaseAdminClient().from("admin_sessions") as unknown as AdminSessionUpdateQuery;
+}
 
-  if (!payloadBase64 || !signature || rest.length > 0) {
-    throw new AppError("admin_session_invalid", "Admin session is invalid.", 401);
-  }
+export function generateAdminSessionToken(): string {
+  return randomBytes(32).toString("base64url");
+}
 
-  const expectedSignature = createAdminSessionSignature(payloadBase64);
-
-  if (
-    signature.length !== expectedSignature.length ||
-    !timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))
-  ) {
-    throw new AppError("admin_session_invalid", "Admin session is invalid.", 401);
-  }
-
-  let payload: unknown;
-
-  try {
-    payload = JSON.parse(Buffer.from(payloadBase64, "base64url").toString("utf8"));
-  } catch {
-    throw new AppError("admin_session_invalid", "Admin session is invalid.", 401);
-  }
-
-  if (!isAdminSessionPayload(payload)) {
-    throw new AppError("admin_session_invalid", "Admin session is invalid.", 401);
-  }
-
-  if (payload.expiresAt <= Date.now()) {
-    throw new AppError("admin_session_expired", "Admin session has expired.", 401);
-  }
-
-  return payload;
+export async function hashAdminSessionToken(rawToken: string): Promise<string> {
+  return createHash("sha256").update(rawToken).digest("hex");
 }
 
 export async function createAdminSession(adminUserId: string): Promise<void> {
+  const rawToken = generateAdminSessionToken();
+  const sessionTokenHash = await hashAdminSessionToken(rawToken);
   const expires = new Date(Date.now() + ADMIN_SESSION_TTL_MS);
   const cookieStore = await cookies();
+  const adminSessions = getAdminSessionsInsertQuery();
+  const now = new Date().toISOString();
 
-  cookieStore.set(
-    ADMIN_SESSION_COOKIE_NAME,
-    encodeAdminSessionValue({
-      adminUserId,
-      expiresAt: expires.getTime(),
-    }),
-    getAdminSessionCookieOptions(expires),
-  );
+  const { error } = await adminSessions.insert({
+    admin_user_id: adminUserId,
+    session_token_hash: sessionTokenHash,
+    is_active: true,
+    issued_at: now,
+    expires_at: expires.toISOString(),
+    invalidated_at: null,
+    last_seen_at: now,
+  });
+
+  if (error) {
+    throw new AppError("admin_session_create_failed", "Failed to create admin session.", 401);
+  }
+
+  cookieStore.set(ADMIN_SESSION_COOKIE_NAME, rawToken, getAdminSessionCookieOptions(expires));
 }
 
 export async function requireAdminSession(): Promise<{ adminUserId: string }> {
@@ -112,15 +119,53 @@ export async function requireAdminSession(): Promise<{ adminUserId: string }> {
     throw new AppError("admin_session_missing", "Admin session is required.", 401);
   }
 
-  const payload = decodeAdminSessionValue(rawCookieValue);
+  const sessionTokenHash = await hashAdminSessionToken(rawCookieValue);
+  const adminSessions = getAdminSessionsSelectQuery();
+  const { data, error } = await adminSessions
+    .select("id, admin_user_id, is_active, expires_at")
+    .eq("session_token_hash", sessionTokenHash)
+    .maybeSingle();
+
+  if (error) {
+    throw new AppError("admin_session_lookup_failed", "Failed to look up admin session.", 401);
+  }
+
+  if (!data) {
+    throw new AppError("admin_session_invalid", "Admin session is invalid.", 401);
+  }
+
+  if (!data.is_active) {
+    throw new AppError("admin_session_invalid", "Admin session is invalid.", 401);
+  }
+
+  if (new Date(data.expires_at).getTime() <= Date.now()) {
+    throw new AppError("admin_session_expired", "Admin session has expired.", 401);
+  }
 
   return {
-    adminUserId: payload.adminUserId,
+    adminUserId: data.admin_user_id,
   };
 }
 
 export async function clearAdminSession(): Promise<void> {
   const cookieStore = await cookies();
+  const rawCookieValue = cookieStore.get(ADMIN_SESSION_COOKIE_NAME)?.value;
+
+  if (rawCookieValue) {
+    const sessionTokenHash = await hashAdminSessionToken(rawCookieValue);
+    const adminSessions = getAdminSessionsUpdateQuery();
+    const { error } = await adminSessions
+      .update({
+        is_active: false,
+        invalidated_at: new Date().toISOString(),
+      })
+      .eq("session_token_hash", sessionTokenHash)
+      .eq("is_active", true);
+
+    if (error) {
+      throw new AppError("admin_session_clear_failed", "Failed to clear admin session.", 401);
+    }
+  }
 
   cookieStore.set(ADMIN_SESSION_COOKIE_NAME, "", {
     httpOnly: true,

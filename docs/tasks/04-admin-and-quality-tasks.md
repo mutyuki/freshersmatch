@@ -16,8 +16,8 @@
   - `export async function logoutAdmin(): Promise<void>`
   - `export default function AdminLoginPage(): JSX.Element`
 - 実装内容:
-  - login: `admin_users.passcode_hash` と照合し、成功時に admin session を発行
-  - logout: httpOnly cookie を破棄しログイン画面へ遷移
+  - login: `admin_users.passcode_hash` と照合し、成功時に `admin_sessions` row を発行して cookie を設定する
+  - logout: current admin session row を無効化し、httpOnly cookie を破棄してログイン画面へ遷移
   - PCブラウザ前提の中央寄せログイン画面にする
   - [layout.pen](../../layout.pen) の `Admin / Login` を参考にする
 - 完了条件:
@@ -33,7 +33,7 @@
   - `../design/03-admin-ops-and-failures.md`
   - `../../src/lib/auth/admin-session.ts`
 - おすすめプロンプト:
-  - `freshers-match-admin-ui と freshers-match-db-api を使って A-001 を実装してください。admin login ページ、login API、admin-login-form、admin-auth-service を追加し、admin_users.passcode_hash と照合して成功時に admin session を発行してください。PC前提のシンプルで明快なログイン画面にしてください。完了時は pnpm format, pnpm lint, pnpm typecheck, 必要なら pnpm test を実行してください。`
+  - `freshers-match-admin-ui と freshers-match-db-api を使って A-001 を実装してください。admin login ページ、login API、admin-login-form、admin-auth-service を追加し、admin_users.passcode_hash と照合して成功時に admin_sessions row を発行し cookie を設定してください。logout は current admin session row のみ無効化して cookie を削除する形にしてください。PC前提のシンプルで明快なログイン画面にしてください。完了時は pnpm format, pnpm lint, pnpm typecheck, 必要なら pnpm test を実行してください。`
 
 ## A-002 運営ダッシュボード
 

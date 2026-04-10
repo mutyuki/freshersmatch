@@ -172,6 +172,9 @@ API 仕様の正本は [`02-data-model-and-api.md`](02-data-model-and-api.md) �
 - `POST /api/admin/staff-match/start`
 - `POST /api/admin/staff-match/resolve`
 - admin client は dashboard / participants / matches / tables の各画面で Realtime subscribe を必須とし、socket event 受信時だけ read API を再取得する
+- admin 認証は httpOnly cookie 内の session token を `admin_sessions` で解決する
+- admin auth helper / service は session token 発行、hash 化、current session の無効化を担当し、participant 側の session helper と責務を混ぜない
+- admin session の有効性判定は `session_token_hash` 一致、`is_active=true`、`expires_at > now()`、対応する `admin_user` の存在で行う
 
 ### monitor
 

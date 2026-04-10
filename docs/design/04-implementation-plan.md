@@ -186,6 +186,8 @@ match/
 
 - 多表更新は migration に PostgreSQL 関数を追加し、Route Handler から RPC として呼ぶ
 - `src/lib/realtime/*` は必須とし、client subscribe / server publish / channel 名定義をここへ集約する
+- `admin-session.ts` は削除せず残し、役割を「DB-backed admin session helper」にする
+- DB スキーマ側では `admin_sessions` を `admin_users` と別テーブルで持ち、運営 cookie の正本とする
 
 ## 3. 1週間で実装するための開発順序
 
