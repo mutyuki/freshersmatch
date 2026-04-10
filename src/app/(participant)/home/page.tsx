@@ -3,6 +3,7 @@
 import { useEffect, type JSX } from "react";
 import { useRouter } from "next/navigation";
 
+import { HomePanel } from "@/components/participant/home-panel";
 import { ParticipantShell } from "@/components/participant/participant-shell";
 import { useParticipantRuntime } from "@/hooks/useParticipantRuntime";
 
@@ -41,31 +42,8 @@ export default function HomePage(): JSX.Element {
   }
 
   return (
-    <ParticipantShell title="参加登録が完了しました">
-      <div className="space-y-4 text-sm leading-6 text-stone-700">
-        <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-4 py-4 text-emerald-900">
-          {state.nickname}{" "}
-          さんで参加中です。再読み込み後も、いまの状態からこの画面に戻れるようになりました。
-        </div>
-        <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/80 px-4 py-4">
-          <dl className="space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-stone-500">現在の状態</dt>
-              <dd className="font-semibold text-stone-900">{state.status}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-stone-500">チップ</dt>
-              <dd className="font-semibold text-stone-900">{state.chipBalance}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-stone-500">待機開始時刻</dt>
-              <dd className="font-semibold text-stone-900">
-                {state.queuedAt ? "取得済み" : "未待機"}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </div>
+    <ParticipantShell title="次の一戦へ進む準備">
+      <HomePanel runtime={state} />
     </ParticipantShell>
   );
 }
