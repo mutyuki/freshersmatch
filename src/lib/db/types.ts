@@ -10,6 +10,8 @@ export type TableStatus = DomainTableStatus;
 export type MatchStatus = DomainMatchStatus;
 export type ChipLedgerReason = "match_bet" | "match_payout" | "admin_adjustment" | "rollback";
 export type AdminRole = "staff" | "admin";
+export type AdminMatchResolutionType = "void" | "winner";
+export type ParticipantDisqualificationMode = "void_current_match" | "lose_current_match";
 
 export interface Database {
   public: {
@@ -270,6 +272,27 @@ export interface Database {
         Args: { p_participant_id: string; p_match_id: string };
         Returns: { match_status: MatchStatus }[];
       };
+      disqualify_participant: {
+        Args: {
+          p_admin_user_id: string;
+          p_participant_id: string;
+          p_mode: ParticipantDisqualificationMode;
+          p_reason: string;
+        };
+        Returns: { participant_status: ParticipantStatus; affected_match_id: string | null }[];
+      };
+      force_release_table: {
+        Args: { p_admin_user_id: string; p_table_id: string };
+        Returns: { table_status: TableStatus; affected_match_id: string | null }[];
+      };
+      hold_table_by_admin: {
+        Args: { p_admin_user_id: string; p_table_id: string };
+        Returns: { table_status: TableStatus }[];
+      };
+      pause_participant: {
+        Args: { p_admin_user_id: string; p_participant_id: string };
+        Returns: { participant_status: ParticipantStatus; affected_match_id: string | null }[];
+      };
       ready_match: {
         Args: { p_participant_id: string; p_match_id: string };
         Returns: {
@@ -292,7 +315,7 @@ export interface Database {
         Args: {
           p_admin_user_id: string;
           p_match_id: string;
-          p_resolution_type: string;
+          p_resolution_type: AdminMatchResolutionType;
           p_winner_participant_id: string | null;
         };
         Returns: { match_status: MatchStatus }[];
@@ -308,6 +331,14 @@ export interface Database {
       start_staff_match: {
         Args: { p_admin_user_id: string; p_participant_id: string; p_table_id: string | null };
         Returns: { match_id: string }[];
+      };
+      release_table_admin_hold: {
+        Args: { p_admin_user_id: string; p_table_id: string };
+        Returns: { table_status: TableStatus }[];
+      };
+      unpause_participant: {
+        Args: { p_admin_user_id: string; p_participant_id: string };
+        Returns: { participant_status: ParticipantStatus }[];
       };
     };
     Enums: Record<string, never>;
