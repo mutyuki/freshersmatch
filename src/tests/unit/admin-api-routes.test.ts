@@ -1,8 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { loginAdminWithPasscode, logoutAdmin } = vi.hoisted(() => ({
+const {
+  loginAdminWithPasscode,
+  logoutAdmin,
+  requireAdminSession,
+  getActiveEventId,
+  getAdminDashboardData,
+} = vi.hoisted(() => ({
   loginAdminWithPasscode: vi.fn(),
   logoutAdmin: vi.fn(),
+  requireAdminSession: vi.fn(),
+  getActiveEventId: vi.fn(),
+  getAdminDashboardData: vi.fn(),
 }));
 
 vi.mock("@/lib/services/admin-auth-service", () => ({
@@ -10,7 +19,17 @@ vi.mock("@/lib/services/admin-auth-service", () => ({
   logoutAdmin,
 }));
 
+vi.mock("@/lib/auth/admin-session", () => ({
+  requireAdminSession,
+}));
+
+vi.mock("@/lib/services/admin-dashboard-service", () => ({
+  getActiveEventId,
+  getAdminDashboardData,
+}));
+
 import { AppError } from "@/lib/domain/errors";
+import { GET as getAdminDashboard } from "@/app/api/admin/dashboard/route";
 import { POST as loginAdminPost } from "@/app/api/admin/login/route";
 import { POST as logoutAdminPost } from "@/app/api/admin/logout/route";
 
@@ -113,5 +132,56 @@ describe("admin api routes", () => {
       },
     });
     expect(response.status).toBe(401);
+  });
+
+  it("returns admin dashboard data after validating the admin session", async () => {
+    requireAdminSession.mockResolvedValue({
+      adminUserId: "admin-1",
+    });
+    getActiveEventId.mockResolvedValue("event-1");
+    getAdminDashboardData.mockResolvedValue({
+      eventId: "event-1",
+      tables: [],
+      queueingParticipants: [],
+      inProgressMatches: [],
+      disconnectedParticipants: [],
+      disputedMatches: [],
+      stalledMatches: [],
+    });
+
+    const response = await getAdminDashboard(new Request("http://localhost/api/admin/dashboard"));
+
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        eventId: "event-1",
+        tables: [],
+        queueingParticipants: [],
+        inProgressMatches: [],
+        disconnectedParticipants: [],
+        disputedMatches: [],
+        stalledMatches: [],
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(requireAdminSession).toHaveBeenCalledTimes(1);
+    expect(getActiveEventId).toHaveBeenCalledTimes(1);
+    expect(getAdminDashboardData).toHaveBeenCalledWith("event-1");
+  });
+
+  it("returns downstream admin session errors as json for dashboard", async () => {
+    requireAdminSession.mockRejectedValue(
+      new AppError("admin_session_missing", "Admin session is required.", 401),
+    );
+
+    const response = await getAdminDashboard(new Request("http://localhost/api/admin/dashboard"));
+
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "admin_session_missing",
+        message: "Admin session is required.",
+      },
+    });
+    expect(response.status).toBe(401);
+    expect(getAdminDashboardData).not.toHaveBeenCalled();
   });
 });

@@ -25,6 +25,8 @@ const {
   chipLedgerSelect,
   chipLedgerEq,
   chipLedgerNestedEq,
+  normalizeParticipantConnectionState,
+  restoreDisconnectedParticipantIfNeeded,
 } = vi.hoisted(() => ({
   getSupabaseAdminClient: vi.fn(),
   generateParticipantSessionToken: vi.fn(),
@@ -48,6 +50,8 @@ const {
   chipLedgerSelect: vi.fn(),
   chipLedgerEq: vi.fn(),
   chipLedgerNestedEq: vi.fn(),
+  normalizeParticipantConnectionState: vi.fn(),
+  restoreDisconnectedParticipantIfNeeded: vi.fn(),
 }));
 
 vi.mock("@/lib/db/server", () => ({
@@ -59,6 +63,11 @@ vi.mock("@/lib/auth/participant-session", () => ({
   hashParticipantSessionToken,
   verifyParticipantSession,
   touchParticipantSession,
+}));
+
+vi.mock("@/lib/services/connection-state-service", () => ({
+  normalizeParticipantConnectionState,
+  restoreDisconnectedParticipantIfNeeded,
 }));
 
 import {
@@ -212,6 +221,8 @@ describe("participant service", () => {
     generateParticipantSessionToken.mockReturnValue("raw-token");
     hashParticipantSessionToken.mockResolvedValue("hashed-token");
     touchParticipantSession.mockResolvedValue(undefined);
+    normalizeParticipantConnectionState.mockResolvedValue(undefined);
+    restoreDisconnectedParticipantIfNeeded.mockResolvedValue(undefined);
   });
 
   it("registers a participant through the RPC and returns the participant row with the raw token", async () => {
@@ -335,6 +346,13 @@ describe("participant service", () => {
 
     expect(verifyParticipantSession).toHaveBeenCalledWith("session-token");
     expect(touchParticipantSession).toHaveBeenCalledWith("session-1");
+    expect(restoreDisconnectedParticipantIfNeeded).toHaveBeenCalledWith({
+      participantId: "participant-1",
+    });
+    expect(normalizeParticipantConnectionState).toHaveBeenCalledWith({
+      participantId: "participant-1",
+      now: expect.any(Date),
+    });
   });
 
   it("returns the minimal registered runtime when there is no current match", async () => {
@@ -362,6 +380,10 @@ describe("participant service", () => {
       resultConfirmedAt: null,
       canStartMatching: true,
       canClaimWin: false,
+    });
+    expect(normalizeParticipantConnectionState).toHaveBeenCalledWith({
+      participantId: "participant-1",
+      now: expect.any(Date),
     });
   });
 

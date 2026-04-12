@@ -45,6 +45,7 @@ import { POST as heartbeatParticipantPost } from "@/app/api/participant/heartbea
 import { GET as getParticipantMe } from "@/app/api/participant/me/route";
 import { POST as acknowledgeResultPost } from "@/app/api/participant/result/ack/route";
 import { POST as registerParticipantPost } from "@/app/api/participant/register/route";
+import { POST as restoreParticipantSessionPost } from "@/app/api/participant/session/restore/route";
 
 describe("participant api routes", () => {
   beforeEach(() => {
@@ -100,6 +101,44 @@ describe("participant api routes", () => {
     expect(response.status).toBe(401);
     expect(verifyParticipantSession).not.toHaveBeenCalled();
     expect(touchParticipantSession).not.toHaveBeenCalled();
+  });
+
+  it("returns wrapped data for participant session restore", async () => {
+    restoreParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      eventId: "event-1",
+      nickname: "Alice",
+      status: "playing",
+      lastNonDisconnectStatus: "playing",
+      chipBalance: 500,
+      currentMatchId: "match-1",
+      queuedAt: null,
+      table: null,
+      match: null,
+      opponent: null,
+      opponentReady: false,
+      winnerParticipantId: null,
+      winnerClaimedByParticipantId: null,
+      disqualifiedReason: null,
+      resultDelta: null,
+      resultConfirmedAt: null,
+      canStartMatching: false,
+      canClaimWin: true,
+    });
+
+    const response = await restoreParticipantSessionPost(
+      new Request("http://localhost/api/participant/session/restore", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionToken: "session-token",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(restoreParticipantSession).toHaveBeenCalledWith({
+      sessionToken: "session-token",
+    });
   });
 
   it("touches the participant session before loading runtime state", async () => {

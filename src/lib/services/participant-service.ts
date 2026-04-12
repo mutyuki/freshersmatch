@@ -8,6 +8,10 @@ import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtim
 import { getSupabaseAdminClient } from "@/lib/db/server";
 import type { ChipLedgerReason, Database } from "@/lib/db/types";
 import { AppError, DomainConflictError } from "@/lib/domain/errors";
+import {
+  normalizeParticipantConnectionState,
+  restoreDisconnectedParticipantIfNeeded,
+} from "@/lib/services/connection-state-service";
 
 type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
@@ -328,12 +332,17 @@ export async function restoreParticipantSession(params: {
 }): Promise<ParticipantRuntimeState> {
   const { participantId, sessionId } = await verifyParticipantSession(params.sessionToken);
   await touchParticipantSession(sessionId);
+  await restoreDisconnectedParticipantIfNeeded({ participantId });
   return getParticipantRuntimeState(participantId);
 }
 
 export async function getParticipantRuntimeState(
   participantId: string,
 ): Promise<ParticipantRuntimeState> {
+  await normalizeParticipantConnectionState({
+    participantId,
+    now: new Date(),
+  });
   const participant = await fetchParticipantById(participantId);
   return buildParticipantRuntimeState(participant);
 }
