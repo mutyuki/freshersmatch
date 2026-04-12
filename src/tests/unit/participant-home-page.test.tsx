@@ -103,7 +103,7 @@ describe("participant home page", () => {
         participantId: "participant-1",
         eventId: "event-1",
         nickname: "Alice",
-        status: "paused",
+        status: "registered",
         lastNonDisconnectStatus: null,
         chipBalance: 0,
         currentMatchId: null,

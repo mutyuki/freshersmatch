@@ -2,9 +2,12 @@ import type { ReactNode } from "react";
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const replace = vi.fn();
-const participantShell = vi.fn();
-const useParticipantRuntime = vi.fn();
+const { replace, participantShell, useParticipantRuntime, useRankingRealtime } = vi.hoisted(() => ({
+  replace: vi.fn(),
+  participantShell: vi.fn(),
+  useParticipantRuntime: vi.fn(),
+  useRankingRealtime: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -21,6 +24,10 @@ vi.mock("@/components/participant/participant-shell", () => ({
 
 vi.mock("@/hooks/useParticipantRuntime", () => ({
   useParticipantRuntime: () => useParticipantRuntime(),
+}));
+
+vi.mock("@/hooks/useRankingRealtime", () => ({
+  useRankingRealtime,
 }));
 
 import HomePage from "@/app/(participant)/home/page";
@@ -56,6 +63,7 @@ describe("participant page heartbeat wiring", () => {
     replace.mockReset();
     participantShell.mockReset();
     useParticipantRuntime.mockReset();
+    useRankingRealtime.mockReset();
     vi.restoreAllMocks();
   });
 
@@ -89,7 +97,10 @@ describe("participant page heartbeat wiring", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
         JSON.stringify({
-          data: [],
+          data: {
+            eventId: "event-1",
+            entries: [],
+          },
         }),
         {
           status: 200,
