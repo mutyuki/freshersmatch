@@ -15,11 +15,13 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 ## 初回投入で使うファイル
 
 - スキーマ: [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql)
+- 運営セッション補助 migration: [`supabase/migrations/0002_add_admin_sessions.sql`](../../supabase/migrations/0002_add_admin_sessions.sql)
 - 初期データ: [`supabase/seed.sql`](../../supabase/seed.sql)
 
 補足:
 
-- `0001` はテーブル、主要制約、guardrail 整合まで含んだ初期スキーマです
+- `0001` はイベント・参加者・卓・試合・台帳の初期スキーマです
+- `0002` は運営ログインに必要な `admin_sessions` テーブルと index を追加します
 - 今後の RPC 実装などは `0003` 以降の別 migration として追加し、既存 schema migration を書き換えない前提で進めます
 
 ## 手順 1: migration を流す
@@ -30,6 +32,8 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 4. `New query` を押す
 5. [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql) の中身を全部貼る
 6. `Run` を押す
+7. 続けて [`supabase/migrations/0002_add_admin_sessions.sql`](../../supabase/migrations/0002_add_admin_sessions.sql) の中身を全部貼る
+8. `Run` を押す
 
 成功したら、以下のテーブルが作成されます。
 
@@ -40,6 +44,7 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 - `tables`
 - `matches`
 - `chip_ledger`
+- `admin_sessions`
 
 この migration では、上記の `public` テーブルすべてで RLS を有効化します。
 これは Supabase 公式の推奨に沿った設定です。`public` スキーマにあるテーブルは、RLS を有効にしないと Data API から露出しやすくなります。

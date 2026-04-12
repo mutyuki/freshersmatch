@@ -5,12 +5,14 @@ const {
   restoreParticipantSession,
   getParticipantRuntimeState,
   heartbeatParticipant,
+  touchParticipantSession,
   verifyParticipantSession,
 } = vi.hoisted(() => ({
   registerParticipant: vi.fn(),
   restoreParticipantSession: vi.fn(),
   getParticipantRuntimeState: vi.fn(),
   heartbeatParticipant: vi.fn(),
+  touchParticipantSession: vi.fn(),
   verifyParticipantSession: vi.fn(),
 }));
 
@@ -22,6 +24,7 @@ vi.mock("@/lib/services/participant-service", () => ({
 }));
 
 vi.mock("@/lib/auth/participant-session", () => ({
+  touchParticipantSession,
   verifyParticipantSession,
 }));
 
@@ -83,6 +86,49 @@ describe("participant api routes", () => {
     });
     expect(response.status).toBe(401);
     expect(verifyParticipantSession).not.toHaveBeenCalled();
+    expect(touchParticipantSession).not.toHaveBeenCalled();
+  });
+
+  it("touches the participant session before loading runtime state", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    touchParticipantSession.mockResolvedValue(undefined);
+    getParticipantRuntimeState.mockResolvedValue({
+      participantId: "participant-1",
+      eventId: "event-1",
+      nickname: "Alice",
+      status: "registered",
+      lastNonDisconnectStatus: "registered",
+      chipBalance: 500,
+      currentMatchId: null,
+      queuedAt: null,
+      table: null,
+      match: null,
+      opponent: null,
+      opponentReady: false,
+      winnerParticipantId: null,
+      winnerClaimedByParticipantId: null,
+      disqualifiedReason: null,
+      resultDelta: null,
+      resultConfirmedAt: null,
+      canStartMatching: true,
+      canClaimWin: false,
+    });
+
+    const response = await getParticipantMe(
+      new Request("http://localhost/api/participant/me", {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(touchParticipantSession).toHaveBeenCalledWith("session-1");
+    expect(getParticipantRuntimeState).toHaveBeenCalledWith("participant-1");
   });
 
   it("accepts heartbeat requests that only send bearer authorization", async () => {

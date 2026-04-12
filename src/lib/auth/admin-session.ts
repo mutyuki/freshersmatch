@@ -15,10 +15,11 @@ type AdminSessionLookup = Pick<
   "id" | "admin_user_id" | "is_active" | "expires_at"
 >;
 type AdminSessionInsert = Database["public"]["Tables"]["admin_sessions"]["Insert"];
-type AdminSessionUpdate = Pick<
+type AdminSessionInvalidateUpdate = Pick<
   Database["public"]["Tables"]["admin_sessions"]["Update"],
   "is_active" | "invalidated_at"
 >;
+type AdminSessionTouchUpdate = Pick<Database["public"]["Tables"]["admin_sessions"]["Update"], "last_seen_at">;
 type AdminSessionInsertQuery = {
   insert(values: AdminSessionInsert): Promise<{
     data: null;
@@ -39,7 +40,7 @@ type AdminSessionSelectQuery = {
   };
 };
 type AdminSessionUpdateQuery = {
-  update(values: AdminSessionUpdate): {
+  update(values: AdminSessionInvalidateUpdate): {
     eq(
       column: "session_token_hash",
       value: string,
@@ -51,6 +52,24 @@ type AdminSessionUpdateQuery = {
         data: null;
         error: { message: string } | null;
       }>;
+    };
+  };
+};
+type AdminSessionTouchQuery = {
+  update(values: AdminSessionTouchUpdate): {
+    eq(
+      column: "id",
+      value: string,
+    ): {
+      eq(
+        column: "is_active",
+        value: true,
+      ): {
+        select(columns: "id"): Promise<{
+          data: Array<Pick<Database["public"]["Tables"]["admin_sessions"]["Row"], "id">> | null;
+          error: { message: string } | null;
+        }>;
+      };
     };
   };
 };
@@ -76,6 +95,10 @@ function getAdminSessionsSelectQuery(): AdminSessionSelectQuery {
 
 function getAdminSessionsUpdateQuery(): AdminSessionUpdateQuery {
   return getSupabaseAdminClient().from("admin_sessions") as unknown as AdminSessionUpdateQuery;
+}
+
+function getAdminSessionsTouchQuery(): AdminSessionTouchQuery {
+  return getSupabaseAdminClient().from("admin_sessions") as unknown as AdminSessionTouchQuery;
 }
 
 export function generateAdminSessionToken(): string {
@@ -139,7 +162,37 @@ export async function requireAdminSession(): Promise<{ adminUserId: string }> {
   }
 
   if (new Date(data.expires_at).getTime() <= Date.now()) {
+    const adminSessionsUpdate = getAdminSessionsUpdateQuery();
+    const { error: invalidateError } = await adminSessionsUpdate
+      .update({
+        is_active: false,
+        invalidated_at: new Date().toISOString(),
+      })
+      .eq("session_token_hash", sessionTokenHash)
+      .eq("is_active", true);
+
+    if (invalidateError) {
+      throw new AppError("admin_session_lookup_failed", "Failed to look up admin session.", 401);
+    }
+
     throw new AppError("admin_session_expired", "Admin session has expired.", 401);
+  }
+
+  const adminSessionsTouch = getAdminSessionsTouchQuery();
+  const { data: touchedRows, error: touchError } = await adminSessionsTouch
+    .update({
+      last_seen_at: new Date().toISOString(),
+    })
+    .eq("id", data.id)
+    .eq("is_active", true)
+    .select("id");
+
+  if (touchError) {
+    throw new AppError("admin_session_lookup_failed", "Failed to look up admin session.", 401);
+  }
+
+  if (!touchedRows || touchedRows.length === 0) {
+    throw new AppError("admin_session_invalid", "Admin session is invalid.", 401);
   }
 
   return {

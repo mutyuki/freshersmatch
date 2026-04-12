@@ -11,8 +11,11 @@ const {
   eq,
   maybeSingle,
   update,
-  updateEq,
-  updateActiveEq,
+  updateTokenEq,
+  updateTokenActiveEq,
+  updateIdEq,
+  updateIdActiveEq,
+  selectTouchedRows,
 } = vi.hoisted(() => ({
   cookies: vi.fn(),
   cookieGet: vi.fn(),
@@ -24,8 +27,11 @@ const {
   eq: vi.fn(),
   maybeSingle: vi.fn(),
   update: vi.fn(),
-  updateEq: vi.fn(),
-  updateActiveEq: vi.fn(),
+  updateTokenEq: vi.fn(),
+  updateTokenActiveEq: vi.fn(),
+  updateIdEq: vi.fn(),
+  updateIdActiveEq: vi.fn(),
+  selectTouchedRows: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -80,11 +86,27 @@ describe("admin session auth helpers", () => {
     });
 
     update.mockReturnValue({
-      eq: updateEq,
+      eq: (column: string, value: string) => {
+        if (column === "session_token_hash") {
+          return updateTokenEq(column, value);
+        }
+
+        if (column === "id") {
+          return updateIdEq(column, value);
+        }
+
+        throw new Error(`Unexpected update eq column: ${column}`);
+      },
     });
 
-    updateEq.mockReturnValue({
-      eq: updateActiveEq,
+    updateTokenEq.mockReturnValue({
+      eq: updateTokenActiveEq,
+    });
+    updateIdEq.mockReturnValue({
+      eq: updateIdActiveEq,
+    });
+    updateIdActiveEq.mockReturnValue({
+      select: selectTouchedRows,
     });
   });
 
@@ -137,6 +159,10 @@ describe("admin session auth helpers", () => {
       },
       error: null,
     });
+    selectTouchedRows.mockResolvedValue({
+      data: [{ id: "session-1" }],
+      error: null,
+    });
 
     await expect(requireAdminSession()).resolves.toEqual({
       adminUserId: "admin-user-2",
@@ -148,6 +174,12 @@ describe("admin session auth helpers", () => {
       "session_token_hash",
       await hashAdminSessionToken("raw-admin-token"),
     );
+    expect(update).toHaveBeenCalledWith({
+      last_seen_at: expect.any(String),
+    });
+    expect(updateIdEq).toHaveBeenCalledWith("id", "session-1");
+    expect(updateIdActiveEq).toHaveBeenCalledWith("is_active", true);
+    expect(selectTouchedRows).toHaveBeenCalledWith("id");
   });
 
   it("rejects when the admin session cookie is missing", async () => {
@@ -213,9 +245,51 @@ describe("admin session auth helpers", () => {
       },
       error: null,
     });
+    updateTokenActiveEq.mockResolvedValue({
+      data: null,
+      error: null,
+    });
 
     await expect(requireAdminSession()).rejects.toMatchObject({
       code: "admin_session_expired",
+      status: 401,
+    });
+
+    expect(update).toHaveBeenCalledWith({
+      is_active: false,
+      invalidated_at: expect.any(String),
+    });
+    expect(updateTokenEq).toHaveBeenCalledWith(
+      "session_token_hash",
+      await hashAdminSessionToken("expired-token"),
+    );
+    expect(updateTokenActiveEq).toHaveBeenCalledWith("is_active", true);
+    expect(selectTouchedRows).not.toHaveBeenCalled();
+  });
+
+  it("rejects when refreshing admin session activity fails", async () => {
+    cookieGet.mockReturnValue({
+      value: "touch-error-token",
+    });
+
+    maybeSingle.mockResolvedValue({
+      data: {
+        id: "session-4",
+        admin_user_id: "admin-user-5",
+        is_active: true,
+        expires_at: "2099-01-01T00:00:00.000Z",
+      },
+      error: null,
+    });
+    selectTouchedRows.mockResolvedValue({
+      data: null,
+      error: {
+        message: "touch failed",
+      },
+    });
+
+    await expect(requireAdminSession()).rejects.toMatchObject({
+      code: "admin_session_lookup_failed",
       status: 401,
     });
   });
@@ -225,7 +299,7 @@ describe("admin session auth helpers", () => {
       value: "logout-token",
     });
 
-    updateActiveEq.mockResolvedValue({
+    updateTokenActiveEq.mockResolvedValue({
       data: null,
       error: null,
     });
@@ -236,11 +310,11 @@ describe("admin session auth helpers", () => {
       is_active: false,
       invalidated_at: expect.any(String),
     });
-    expect(updateEq).toHaveBeenCalledWith(
+    expect(updateTokenEq).toHaveBeenCalledWith(
       "session_token_hash",
       await hashAdminSessionToken("logout-token"),
     );
-    expect(updateActiveEq).toHaveBeenCalledWith("is_active", true);
+    expect(updateTokenActiveEq).toHaveBeenCalledWith("is_active", true);
     expect(cookieSet).toHaveBeenCalledWith("freshers_match_admin_session", "", {
       httpOnly: true,
       sameSite: "lax",
