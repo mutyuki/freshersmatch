@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
+import { getPreferredParticipantRoute } from "@/lib/participant-route";
 import {
   clearParticipantSessionToken,
   getParticipantSessionToken,
@@ -16,29 +17,6 @@ type RuntimeResponse = {
     message?: string;
   };
 };
-
-const MATCH_ROUTE_STATUSES = new Set<ParticipantRuntimeState["status"]>([
-  "queueing",
-  "match_reserved",
-  "ready",
-  "playing",
-  "claiming_win",
-  "awaiting_result_approval",
-  "result_confirmed",
-]);
-
-function getPreferredRoute(state: ParticipantRuntimeState): "/home" | "/match" {
-  const resolvedStatus =
-    state.status === "disconnected"
-      ? (state.lastNonDisconnectStatus ?? "registered")
-      : state.status;
-
-  if (MATCH_ROUTE_STATUSES.has(resolvedStatus)) {
-    return "/match";
-  }
-
-  return "/home";
-}
 
 function isCurrentRouteCompatible(pathname: string, preferredRoute: "/home" | "/match"): boolean {
   if (pathname === preferredRoute) {
@@ -144,7 +122,10 @@ export function useParticipantRuntime(): {
       return;
     }
 
-    const preferredRoute = getPreferredRoute(state);
+    const preferredRoute = getPreferredParticipantRoute(
+      state.status,
+      state.lastNonDisconnectStatus,
+    );
 
     if (!isCurrentRouteCompatible(pathname, preferredRoute)) {
       router.replace(preferredRoute);
