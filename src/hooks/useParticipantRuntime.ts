@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
+import { useParticipantRealtime } from "@/hooks/useParticipantRealtime";
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
 import { getPreferredParticipantRoute } from "@/lib/participant-route";
 import {
@@ -108,6 +109,15 @@ export function useParticipantRuntime(): {
   useEffect(() => {
     void loadRuntime("restore");
   }, [loadRuntime]);
+
+  useParticipantRealtime({
+    enabled: !isLoading && !!state,
+    eventId: state?.eventId ?? "",
+    participantId: state?.participantId ?? "",
+    refresh: async () => {
+      await loadRuntime("refresh");
+    },
+  });
 
   useEffect(() => {
     if (isLoading) {

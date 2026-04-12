@@ -7,3 +7,8 @@ export interface RankingEntry {
   status: ParticipantStatus;
   rank: number;
 }
+
+export interface RankingSnapshot {
+  eventId: string;
+  entries: RankingEntry[];
+}

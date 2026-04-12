@@ -1,4 +1,5 @@
 import { errorJson, okJson } from "@/lib/api/response";
+import type { RankingSnapshot } from "@/lib/contracts/ranking";
 import { getSupabaseAdminClient } from "@/lib/db/server";
 import type { Database } from "@/lib/db/types";
 import { AppError } from "@/lib/domain/errors";
@@ -28,8 +29,12 @@ export async function GET(_request: Request): Promise<Response> {
   try {
     const eventId = await getActiveEventId();
     const entries = await listRanking({ eventId });
+    const snapshot: RankingSnapshot = {
+      eventId,
+      entries,
+    };
 
-    return okJson(entries);
+    return okJson(snapshot);
   } catch (error) {
     return errorJson(error instanceof Error ? error : new Error("Unknown error"));
   }

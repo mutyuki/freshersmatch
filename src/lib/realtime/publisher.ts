@@ -1,54 +1,53 @@
 import { getSupabaseAdminClient } from "@/lib/db/server";
-import { AppError } from "@/lib/domain/errors";
-
-type InvalidationScope = "participant" | "match" | "ranking" | "admin";
-
-type InvalidationPayload = {
-  eventId: string;
-  scopes: InvalidationScope[];
-  participantIds?: string[];
-  matchId?: string | null;
-  tableId?: string | null;
-  publishedAt: string;
-};
-
-function getChannelName(eventId: string, scope: InvalidationScope): string {
-  return `event:${eventId}:${scope}`;
-}
+import {
+  getChannelName,
+  getRealtimeEventType,
+  type RealtimeInvalidationPayload,
+  type RealtimeScope,
+} from "@/lib/realtime/channels";
 
 export async function publishInvalidation(params: {
   eventId: string;
-  scopes: InvalidationScope[];
+  scopes: RealtimeScope[];
   participantIds?: string[];
   matchId?: string | null;
   tableId?: string | null;
 }): Promise<void> {
   const supabase = getSupabaseAdminClient();
-  const payload: InvalidationPayload = {
-    eventId: params.eventId,
-    scopes: params.scopes,
-    participantIds: params.participantIds,
-    matchId: params.matchId ?? null,
-    tableId: params.tableId ?? null,
-    publishedAt: new Date().toISOString(),
-  };
 
   for (const scope of params.scopes) {
     const channel = supabase.channel(getChannelName(params.eventId, scope));
-    const result = await channel.send({
-      type: "broadcast",
-      event: "invalidation",
-      payload,
-    });
+    const payload: RealtimeInvalidationPayload = {
+      eventType: getRealtimeEventType(scope),
+      eventId: params.eventId,
+      participantIds: params.participantIds,
+      matchId: params.matchId ?? null,
+      tableId: params.tableId ?? null,
+      occurredAt: new Date().toISOString(),
+    };
 
-    await supabase.removeChannel(channel);
+    try {
+      const result = await channel.send({
+        type: "broadcast",
+        event: payload.eventType,
+        payload,
+      });
 
-    if (result !== "ok") {
-      throw new AppError(
-        "invalidation_publish_failed",
-        "Failed to publish realtime invalidation.",
-        500,
-      );
+      if (result !== "ok") {
+        console.error("Failed to publish realtime invalidation.", {
+          eventId: params.eventId,
+          scope,
+          result,
+        });
+      }
+    } catch (error) {
+      console.error("Unexpected realtime invalidation publish error.", {
+        eventId: params.eventId,
+        scope,
+        error,
+      });
+    } finally {
+      await supabase.removeChannel(channel);
     }
   }
 }

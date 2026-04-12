@@ -1,8 +1,11 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const replace = vi.fn();
-const useParticipantRuntime = vi.fn();
+const { replace, useParticipantRuntime, useRankingRealtime } = vi.hoisted(() => ({
+  replace: vi.fn(),
+  useParticipantRuntime: vi.fn(),
+  useRankingRealtime: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -14,12 +17,17 @@ vi.mock("@/hooks/useParticipantRuntime", () => ({
   useParticipantRuntime: () => useParticipantRuntime(),
 }));
 
+vi.mock("@/hooks/useRankingRealtime", () => ({
+  useRankingRealtime,
+}));
+
 import ParticipantRankingPage from "@/app/(participant)/ranking/page";
 
 describe("participant ranking page", () => {
   beforeEach(() => {
     replace.mockReset();
     useParticipantRuntime.mockReset();
+    useRankingRealtime.mockReset();
     vi.restoreAllMocks();
   });
 
@@ -53,22 +61,25 @@ describe("participant ranking page", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
         JSON.stringify({
-          data: [
-            {
-              participantId: "participant-1",
-              nickname: "Alice",
-              chipBalance: 20,
-              status: "registered",
-              rank: 1,
-            },
-            {
-              participantId: "participant-2",
-              nickname: "Bob",
-              chipBalance: 12,
-              status: "registered",
-              rank: 2,
-            },
-          ],
+          data: {
+            eventId: "event-1",
+            entries: [
+              {
+                participantId: "participant-1",
+                nickname: "Alice",
+                chipBalance: 20,
+                status: "registered",
+                rank: 1,
+              },
+              {
+                participantId: "participant-2",
+                nickname: "Bob",
+                chipBalance: 12,
+                status: "registered",
+                rank: 2,
+              },
+            ],
+          },
         }),
         {
           status: 200,
@@ -109,6 +120,11 @@ describe("participant ranking page", () => {
 
     expect(await screen.findByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Bob").closest("article")).toHaveAttribute("aria-current", "true");
+    expect(useRankingRealtime).toHaveBeenCalledWith({
+      enabled: true,
+      eventId: "event-1",
+      refresh: expect.any(Function),
+    });
   });
 
   it("shows an error message when the ranking API fails", async () => {

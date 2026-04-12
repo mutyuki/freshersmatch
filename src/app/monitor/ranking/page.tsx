@@ -1,67 +1,64 @@
 "use client";
 
-import { useEffect, useState, type JSX } from "react";
+import { useCallback, useEffect, useState, type JSX } from "react";
 
 import { RankingList } from "@/components/ranking/ranking-list";
-import type { RankingEntry } from "@/lib/contracts/ranking";
+import { useRankingRealtime } from "@/hooks/useRankingRealtime";
+import type { RankingSnapshot } from "@/lib/contracts/ranking";
 
 type RankingResponse = {
-  data?: RankingEntry[];
+  data?: RankingSnapshot;
   error?: {
     message?: string;
   };
 };
 
 export default function MonitorRankingPage(): JSX.Element {
-  const [entries, setEntries] = useState<RankingEntry[]>([]);
+  const [entries, setEntries] = useState<RankingSnapshot["entries"]>([]);
+  const [eventId, setEventId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isCancelled = false;
+  const loadRanking = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
 
-    async function loadRanking(): Promise<void> {
-      setIsLoading(true);
-      setError(null);
+    try {
+      const response = await fetch("/api/ranking", {
+        method: "GET",
+      });
+      const payload = (await response.json().catch(() => null)) as RankingResponse | null;
 
-      try {
-        const response = await fetch("/api/ranking", {
-          method: "GET",
-        });
-        const payload = (await response.json().catch(() => null)) as RankingResponse | null;
-
-        if (!response.ok || !payload?.data) {
-          throw new Error(
-            payload?.error?.message ??
-              "ランキングを読み込めませんでした。しばらくして再表示してください。",
-          );
-        }
-
-        if (!isCancelled) {
-          setEntries(payload.data);
-        }
-      } catch (nextError) {
-        if (!isCancelled) {
-          setEntries([]);
-          setError(
-            nextError instanceof Error
-              ? nextError.message
-              : "ランキングを読み込めませんでした。しばらくして再表示してください。",
-          );
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
+      if (!response.ok || !payload?.data) {
+        throw new Error(
+          payload?.error?.message ??
+            "ランキングを読み込めませんでした。しばらくして再表示してください。",
+        );
       }
+
+      setEntries(payload.data.entries);
+      setEventId(payload.data.eventId);
+    } catch (nextError) {
+      setEntries([]);
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "ランキングを読み込めませんでした。しばらくして再表示してください。",
+      );
+    } finally {
+      setIsLoading(false);
     }
-
-    void loadRanking();
-
-    return () => {
-      isCancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    void loadRanking();
+  }, [loadRanking]);
+
+  useRankingRealtime({
+    enabled: !!eventId,
+    eventId: eventId ?? "",
+    refresh: loadRanking,
+  });
 
   if (isLoading) {
     return (

@@ -1,14 +1,21 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const replace = vi.fn();
-const mockUsePathname = vi.fn();
+const { replace, mockUsePathname, useParticipantRealtime } = vi.hoisted(() => ({
+  replace: vi.fn(),
+  mockUsePathname: vi.fn(),
+  useParticipantRealtime: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     replace,
   }),
   usePathname: () => mockUsePathname(),
+}));
+
+vi.mock("@/hooks/useParticipantRealtime", () => ({
+  useParticipantRealtime,
 }));
 
 import { useParticipantRuntime } from "@/hooks/useParticipantRuntime";
@@ -62,6 +69,7 @@ describe("useParticipantRuntime", () => {
     window.localStorage.setItem("freshers-match.participant-session-token", "session-token");
     mockUsePathname.mockReturnValue("/home");
     replace.mockReset();
+    useParticipantRealtime.mockReset();
     vi.restoreAllMocks();
   });
 
@@ -96,6 +104,12 @@ describe("useParticipantRuntime", () => {
       }),
     });
     expect(result.current.state?.status).toBe("registered");
+    expect(useParticipantRealtime).toHaveBeenCalledWith({
+      enabled: true,
+      eventId: "event-1",
+      participantId: "participant-1",
+      refresh: expect.any(Function),
+    });
   });
 
   it("refreshes runtime via participant/me with bearer authorization", async () => {

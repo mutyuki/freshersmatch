@@ -59,15 +59,18 @@ describe("ranking api route", () => {
     const response = await getRanking(new Request("http://localhost/api/ranking"));
 
     await expect(response.json()).resolves.toEqual({
-      data: [
-        {
-          participantId: "participant-1",
-          nickname: "Alice",
-          chipBalance: 1500,
-          status: "registered",
-          rank: 1,
-        },
-      ],
+      data: {
+        eventId: "event-1",
+        entries: [
+          {
+            participantId: "participant-1",
+            nickname: "Alice",
+            chipBalance: 1500,
+            status: "registered",
+            rank: 1,
+          },
+        ],
+      },
     });
     expect(response.status).toBe(200);
     expect(from).toHaveBeenCalledWith("events");

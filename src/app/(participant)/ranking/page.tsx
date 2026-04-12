@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState, type JSX } from "react";
+import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { useRouter } from "next/navigation";
 
 import { ParticipantShell } from "@/components/participant/participant-shell";
 import { RankingList } from "@/components/ranking/ranking-list";
-import type { RankingEntry } from "@/lib/contracts/ranking";
+import { useRankingRealtime } from "@/hooks/useRankingRealtime";
+import type { RankingSnapshot } from "@/lib/contracts/ranking";
 import { useParticipantRuntime } from "@/hooks/useParticipantRuntime";
 
 type RankingResponse = {
-  data?: RankingEntry[];
+  data?: RankingSnapshot;
   error?: {
     message?: string;
   };
@@ -18,9 +19,16 @@ type RankingResponse = {
 export default function ParticipantRankingPage(): JSX.Element {
   const router = useRouter();
   const { state, isLoading } = useParticipantRuntime();
-  const [entries, setEntries] = useState<RankingEntry[]>([]);
+  const [entries, setEntries] = useState<RankingSnapshot["entries"]>([]);
   const [isRankingLoading, setIsRankingLoading] = useState(false);
   const [rankingError, setRankingError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !state) {
@@ -28,55 +36,55 @@ export default function ParticipantRankingPage(): JSX.Element {
     }
   }, [isLoading, router, state]);
 
+  const loadRanking = useCallback(async (): Promise<void> => {
+    setIsRankingLoading(true);
+    setRankingError(null);
+
+    try {
+      const response = await fetch("/api/ranking", {
+        method: "GET",
+      });
+      const payload = (await response.json().catch(() => null)) as RankingResponse | null;
+
+      if (!response.ok || !payload?.data) {
+        throw new Error(
+          payload?.error?.message ??
+            "ランキングの読み込みに失敗しました。少し待ってからもう一度お試しください。",
+        );
+      }
+
+      if (isMountedRef.current) {
+        setEntries(payload.data.entries);
+      }
+    } catch (error) {
+      if (isMountedRef.current) {
+        setEntries([]);
+        setRankingError(
+          error instanceof Error
+            ? error.message
+            : "ランキングの読み込みに失敗しました。少し待ってからもう一度お試しください。",
+        );
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsRankingLoading(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!state) {
       return;
     }
 
-    let isCancelled = false;
-
-    async function loadRanking(): Promise<void> {
-      setIsRankingLoading(true);
-      setRankingError(null);
-
-      try {
-        const response = await fetch("/api/ranking", {
-          method: "GET",
-        });
-        const payload = (await response.json().catch(() => null)) as RankingResponse | null;
-
-        if (!response.ok || !payload?.data) {
-          throw new Error(
-            payload?.error?.message ??
-              "ランキングの読み込みに失敗しました。少し待ってからもう一度お試しください。",
-          );
-        }
-
-        if (!isCancelled) {
-          setEntries(payload.data);
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          setEntries([]);
-          setRankingError(
-            error instanceof Error
-              ? error.message
-              : "ランキングの読み込みに失敗しました。少し待ってからもう一度お試しください。",
-          );
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsRankingLoading(false);
-        }
-      }
-    }
-
     void loadRanking();
+  }, [loadRanking, state]);
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [state]);
+  useRankingRealtime({
+    enabled: !!state,
+    eventId: state?.eventId ?? "",
+    refresh: loadRanking,
+  });
 
   if (isLoading) {
     return (
