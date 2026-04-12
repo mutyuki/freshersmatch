@@ -282,7 +282,7 @@ export async function executeReadyMatch(params: {
 export async function executeCancelBeforeStart(params: {
   participantId: string;
   matchId: string;
-}): Promise<void> {
+}): Promise<ParticipantRuntimeState> {
   const { participant } = await assertParticipantAndMatch(params);
   const supabase = getMatchServiceSupabaseClient();
   const { data, error } = await supabase.rpc("cancel_match_before_start", {
@@ -301,6 +301,8 @@ export async function executeCancelBeforeStart(params: {
       500,
     );
   }
+
+  return getParticipantRuntimeState(participant.id);
 }
 
 export async function executeClaimWin(params: {

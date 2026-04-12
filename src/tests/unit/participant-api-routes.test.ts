@@ -5,15 +5,19 @@ const {
   restoreParticipantSession,
   getParticipantRuntimeState,
   heartbeatParticipant,
+  acknowledgeResultConfirmed,
   touchParticipantSession,
   verifyParticipantSession,
+  publishInvalidation,
 } = vi.hoisted(() => ({
   registerParticipant: vi.fn(),
   restoreParticipantSession: vi.fn(),
   getParticipantRuntimeState: vi.fn(),
   heartbeatParticipant: vi.fn(),
+  acknowledgeResultConfirmed: vi.fn(),
   touchParticipantSession: vi.fn(),
   verifyParticipantSession: vi.fn(),
+  publishInvalidation: vi.fn(),
 }));
 
 vi.mock("@/lib/services/participant-service", () => ({
@@ -23,14 +27,23 @@ vi.mock("@/lib/services/participant-service", () => ({
   heartbeatParticipant,
 }));
 
+vi.mock("@/lib/services/match-service", () => ({
+  acknowledgeResultConfirmed,
+}));
+
 vi.mock("@/lib/auth/participant-session", () => ({
   touchParticipantSession,
   verifyParticipantSession,
 }));
 
+vi.mock("@/lib/realtime/publisher", () => ({
+  publishInvalidation,
+}));
+
 import { AppError } from "@/lib/domain/errors";
 import { POST as heartbeatParticipantPost } from "@/app/api/participant/heartbeat/route";
 import { GET as getParticipantMe } from "@/app/api/participant/me/route";
+import { POST as acknowledgeResultPost } from "@/app/api/participant/result/ack/route";
 import { POST as registerParticipantPost } from "@/app/api/participant/register/route";
 
 describe("participant api routes", () => {
@@ -179,5 +192,129 @@ describe("participant api routes", () => {
       },
     });
     expect(response.status).toBe(404);
+  });
+
+  it("acknowledges a confirmed result without parsing a body", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    acknowledgeResultConfirmed.mockResolvedValue({
+      participantId: "participant-1",
+      eventId: "event-1",
+      nickname: "Alice",
+      status: "registered",
+      lastNonDisconnectStatus: "registered",
+      chipBalance: 500,
+      currentMatchId: null,
+      queuedAt: null,
+      table: null,
+      match: null,
+      opponent: null,
+      opponentReady: false,
+      winnerParticipantId: null,
+      winnerClaimedByParticipantId: null,
+      disqualifiedReason: null,
+      resultDelta: null,
+      resultConfirmedAt: null,
+      canStartMatching: true,
+      canClaimWin: false,
+    });
+    publishInvalidation.mockResolvedValue(undefined);
+
+    const response = await acknowledgeResultPost(
+      new Request("http://localhost/api/participant/result/ack", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: "{",
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "registered",
+        lastNonDisconnectStatus: "registered",
+        chipBalance: 500,
+        currentMatchId: null,
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: true,
+        canClaimWin: false,
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(verifyParticipantSession).toHaveBeenCalledWith("session-token");
+    expect(acknowledgeResultConfirmed).toHaveBeenCalledWith({
+      participantId: "participant-1",
+    });
+    expect(publishInvalidation).toHaveBeenCalledWith({
+      eventId: "event-1",
+      scopes: ["participant", "admin", "ranking"],
+      participantIds: ["participant-1"],
+    });
+  });
+
+  it("returns a 401 json error when the bearer token is missing for result ack", async () => {
+    const response = await acknowledgeResultPost(
+      new Request("http://localhost/api/participant/result/ack", {
+        method: "POST",
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "participant_session_missing",
+        message: "Participant session is required.",
+      },
+    });
+    expect(response.status).toBe(401);
+    expect(verifyParticipantSession).not.toHaveBeenCalled();
+    expect(publishInvalidation).not.toHaveBeenCalled();
+  });
+
+  it("returns downstream app errors from result ack as json", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    acknowledgeResultConfirmed.mockRejectedValue(
+      new AppError(
+        "participant_status_conflict",
+        "Participant cannot acknowledge the result from the current state.",
+        409,
+      ),
+    );
+
+    const response = await acknowledgeResultPost(
+      new Request("http://localhost/api/participant/result/ack", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "participant_status_conflict",
+        message: "Participant cannot acknowledge the result from the current state.",
+      },
+    });
+    expect(response.status).toBe(409);
+    expect(publishInvalidation).not.toHaveBeenCalled();
   });
 });
