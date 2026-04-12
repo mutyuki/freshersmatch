@@ -3,8 +3,11 @@
 import { useEffect, type JSX } from "react";
 import { useRouter } from "next/navigation";
 
+import { DisqualifiedPanel } from "@/components/participant/disqualified-panel";
 import { HomePanel } from "@/components/participant/home-panel";
+import { PausedPanel } from "@/components/participant/paused-panel";
 import { ParticipantShell } from "@/components/participant/participant-shell";
+import { ReconnectingOverlay } from "@/components/participant/reconnecting-overlay";
 import { useParticipantRuntime } from "@/hooks/useParticipantRuntime";
 
 export default function HomePage(): JSX.Element {
@@ -43,7 +46,14 @@ export default function HomePage(): JSX.Element {
 
   return (
     <ParticipantShell title="次の一戦へ進む準備" heartbeatEnabled={true}>
-      <HomePanel runtime={state} />
+      {state.status === "paused" ? <PausedPanel /> : null}
+      {state.status === "disqualified" ? (
+        <DisqualifiedPanel reason={state.disqualifiedReason} />
+      ) : null}
+      {state.status !== "paused" && state.status !== "disqualified" ? (
+        <HomePanel runtime={state} />
+      ) : null}
+      {state.status === "disconnected" ? <ReconnectingOverlay /> : null}
     </ParticipantShell>
   );
 }

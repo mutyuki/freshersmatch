@@ -132,6 +132,108 @@ describe("participant home page", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the paused panel instead of the normal home content", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "paused",
+        lastNonDisconnectStatus: null,
+        chipBalance: 12,
+        currentMatchId: null,
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: false,
+        canClaimWin: false,
+      },
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByText("進行が一時停止されています")).toBeInTheDocument();
+    expect(
+      screen.getByText("運営により一時停止されています。運営に問い合わせてください。"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("ランキングを見る")).not.toBeInTheDocument();
+  });
+
+  it("renders the disqualified panel with its reason", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "disqualified",
+        lastNonDisconnectStatus: null,
+        chipBalance: 12,
+        currentMatchId: null,
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: "迷惑行為が確認されました",
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: false,
+        canClaimWin: false,
+      },
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByText("失格となりました")).toBeInTheDocument();
+    expect(screen.getByText("迷惑行為が確認されました")).toBeInTheDocument();
+    expect(screen.queryByText("ランキングを見る")).not.toBeInTheDocument();
+  });
+
+  it("shows a reconnecting overlay for disconnected participants", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "disconnected",
+        lastNonDisconnectStatus: "registered",
+        chipBalance: 12,
+        currentMatchId: null,
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: false,
+        canClaimWin: false,
+      },
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByText("再接続中...")).toBeInTheDocument();
+  });
+
   it("renders assigned table details when a table is present", () => {
     useParticipantRuntime.mockReturnValue({
       state: {

@@ -8,6 +8,7 @@ import { InProgressPanel } from "@/components/participant/in-progress-panel";
 import { MatchReservedPanel } from "@/components/participant/match-reserved-panel";
 import { ParticipantShell } from "@/components/participant/participant-shell";
 import { QueuePanel } from "@/components/participant/queue-panel";
+import { ReconnectingOverlay } from "@/components/participant/reconnecting-overlay";
 import { ResultApprovalPanel } from "@/components/participant/result-approval-panel";
 import { ResultConfirmedPanel } from "@/components/participant/result-confirmed-panel";
 import { useParticipantRuntime } from "@/hooks/useParticipantRuntime";
@@ -78,6 +79,7 @@ export default function MatchPage(): JSX.Element {
         <ResultApprovalPanel runtime={runtime} />
       ) : null}
       {runtime.status === "result_confirmed" ? <ResultConfirmedPanel runtime={runtime} /> : null}
+      {runtime.status === "disconnected" ? <ReconnectingOverlay /> : null}
     </ParticipantShell>
   );
 }

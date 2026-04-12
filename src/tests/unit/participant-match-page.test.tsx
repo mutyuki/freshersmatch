@@ -24,7 +24,9 @@ function createRuntime(
     | "playing"
     | "claiming_win"
     | "awaiting_result_approval"
-    | "result_confirmed",
+    | "result_confirmed"
+    | "disconnected",
+  overrides: Record<string, unknown> = {},
 ) {
   return {
     participantId: "participant-1",
@@ -36,7 +38,7 @@ function createRuntime(
     currentMatchId: status === "queueing" ? null : "match-1",
     queuedAt: "2026-04-12T01:00:00.000Z",
     table:
-      status === "queueing"
+      status === "queueing" || status === "disconnected"
         ? null
         : {
             id: "table-1",
@@ -45,7 +47,7 @@ function createRuntime(
             status: "reserved" as const,
           },
     match:
-      status === "queueing"
+      status === "queueing" || status === "disconnected"
         ? null
         : {
             id: "match-1",
@@ -64,7 +66,7 @@ function createRuntime(
             disputeCount: 0,
           },
     opponent:
-      status === "queueing"
+      status === "queueing" || status === "disconnected"
         ? null
         : {
             participantId: "participant-2",
@@ -81,6 +83,7 @@ function createRuntime(
     resultConfirmedAt: status === "result_confirmed" ? "2026-04-12T01:15:00.000Z" : null,
     canStartMatching: false,
     canClaimWin: status === "playing",
+    ...overrides,
   };
 }
 
@@ -191,6 +194,20 @@ describe("participant match page", () => {
 
     expect(screen.getByText("結果が確定しました")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "結果を確認して次へ" })).toBeInTheDocument();
+  });
+
+  it("shows the reconnecting overlay while the participant is disconnected", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: createRuntime("disconnected", {
+        lastNonDisconnectStatus: "playing",
+      }),
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<MatchPage />);
+
+    expect(screen.getByText("再接続中...")).toBeInTheDocument();
   });
 
   it("redirects to join when no participant state is available", () => {
