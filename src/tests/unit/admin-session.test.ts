@@ -133,7 +133,7 @@ describe("admin session auth helpers", () => {
         id: "session-1",
         admin_user_id: "admin-user-2",
         is_active: true,
-        expires_at: "2026-04-10T17:00:00.000Z",
+        expires_at: "2099-01-01T00:00:00.000Z",
       },
       error: null,
     });
