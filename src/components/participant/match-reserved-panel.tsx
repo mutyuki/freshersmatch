@@ -1,31 +1,88 @@
 "use client";
 
-import type { JSX } from "react";
+import { useState, type JSX } from "react";
+import { useRouter } from "next/navigation";
 
 import { StatusBadge } from "@/components/participant/status-badge";
+import {
+  getOpponentLabel,
+  postParticipantAction,
+  publishRuntimeUpdate,
+} from "@/components/participant/match-panel-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
 
-function getOpponentLabel(runtime: ParticipantRuntimeState): string {
-  if (runtime.match?.isStaffMatch) {
-    return "運営スタッフ";
-  }
-
-  return runtime.opponent?.nickname ?? "確認中";
-}
-
 export function MatchReservedPanel(props: { runtime: ParticipantRuntimeState }): JSX.Element {
   const { runtime } = props;
+  const router = useRouter();
   const isReadyState = runtime.status === "ready";
   const hasTable = runtime.table !== null;
   const opponentLabel = getOpponentLabel(runtime);
-  const primaryLabel = isReadyState
-    ? "相手の到着を待っています"
-    : "開始導線は次タスクで接続予定です";
+  const [pendingAction, setPendingAction] = useState<"ready" | "cancel" | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const primaryLabel = isReadyState ? "相手の到着を待っています" : "対戦を開始する";
   const helperCopy = isReadyState
     ? "あなたの準備は完了しています。相手の準備がそろうと対戦開始へ進みます。"
     : "卓に着いたらすぐ始められるよう、この画面を開いたままでお待ちください。";
+  const canStart = !isReadyState && hasTable && runtime.currentMatchId !== null;
+
+  async function handleReady(): Promise<void> {
+    if (!runtime.currentMatchId || pendingAction || !canStart) {
+      return;
+    }
+
+    setPendingAction("ready");
+    setErrorMessage(null);
+
+    try {
+      const nextRuntime = await postParticipantAction<ParticipantRuntimeState>("/api/match/ready", {
+        body: {
+          matchId: runtime.currentMatchId,
+        },
+        defaultErrorMessage:
+          "対戦開始に失敗しました。通信状況を確認してから、もう一度お試しください。",
+      });
+
+      publishRuntimeUpdate(nextRuntime);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "対戦開始に失敗しました。少し待ってからもう一度お試しください。",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleCancelBeforeStart(): Promise<void> {
+    if (!runtime.currentMatchId || pendingAction || isReadyState) {
+      return;
+    }
+
+    setPendingAction("cancel");
+    setErrorMessage(null);
+
+    try {
+      await postParticipantAction<{ ok: true }>("/api/match/cancel-before-start", {
+        body: {
+          matchId: runtime.currentMatchId,
+        },
+        defaultErrorMessage: "開始前キャンセルに失敗しました。時間をおいてもう一度お試しください。",
+      });
+
+      router.push("/home");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "開始前キャンセルに失敗しました。時間をおいてもう一度お試しください。",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -95,29 +152,41 @@ export function MatchReservedPanel(props: { runtime: ParticipantRuntimeState }):
         <Button
           type="button"
           size="lg"
-          disabled={true}
-          aria-disabled="true"
+          disabled={!isReadyState ? !canStart || pendingAction !== null : true}
+          aria-disabled={!isReadyState ? !canStart || pendingAction !== null : true}
+          onClick={() => void handleReady()}
           className="h-12 w-full rounded-2xl bg-stone-950 text-base font-semibold text-stone-50 hover:bg-stone-800"
         >
-          {primaryLabel}
+          {pendingAction === "ready" ? "対戦を開始しています..." : primaryLabel}
         </Button>
 
         {!isReadyState ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            disabled={true}
-            aria-disabled="true"
-            className="h-12 w-full rounded-2xl border-stone-300 bg-white text-base font-semibold text-stone-900 hover:bg-stone-50"
-          >
-            開始前に戻る導線は次タスクで接続予定です
-          </Button>
+          <Card className="rounded-[1.5rem] border border-stone-200/90 bg-stone-50/70 py-0">
+            <CardContent className="space-y-3 px-4 py-4">
+              <p className="text-sm leading-6 text-stone-700">
+                卓に向かえなくなったときだけ開始前キャンセルを使ってください。取り消すとホームへ戻ります。
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled={runtime.currentMatchId === null || pendingAction !== null}
+                onClick={() => void handleCancelBeforeStart()}
+                className="h-12 w-full rounded-2xl border-stone-300 bg-white text-base font-semibold text-stone-900 hover:bg-stone-50"
+              >
+                {pendingAction === "cancel"
+                  ? "開始前キャンセルを送信しています..."
+                  : "開始前キャンセル"}
+              </Button>
+            </CardContent>
+          </Card>
         ) : null}
 
         <p className="text-sm leading-6 text-stone-600">
           {hasTable ? helperCopy : "卓情報がそろうまで操作はできません。"}
         </p>
+
+        {errorMessage ? <p className="text-sm leading-6 text-red-700">{errorMessage}</p> : null}
       </section>
     </div>
   );

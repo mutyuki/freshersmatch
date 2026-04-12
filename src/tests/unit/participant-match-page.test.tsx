@@ -16,7 +16,16 @@ vi.mock("@/hooks/useParticipantRuntime", () => ({
 
 import MatchPage from "@/app/(participant)/match/page";
 
-function createRuntime(status: "queueing" | "match_reserved" | "ready") {
+function createRuntime(
+  status:
+    | "queueing"
+    | "match_reserved"
+    | "ready"
+    | "playing"
+    | "claiming_win"
+    | "awaiting_result_approval"
+    | "result_confirmed",
+) {
   return {
     participantId: "participant-1",
     eventId: "event-1",
@@ -40,9 +49,18 @@ function createRuntime(status: "queueing" | "match_reserved" | "ready") {
         ? null
         : {
             id: "match-1",
-            status: "reserved" as const,
+            status:
+              status === "match_reserved"
+                ? ("reserved" as const)
+                : status === "ready"
+                  ? ("awaiting_ready" as const)
+                  : status === "playing"
+                    ? ("in_progress" as const)
+                    : status === "claiming_win" || status === "awaiting_result_approval"
+                      ? ("winner_claimed" as const)
+                      : ("completed" as const),
             isStaffMatch: false,
-            agreedBetAmount: null,
+            agreedBetAmount: 4,
             disputeCount: 0,
           },
     opponent:
@@ -53,13 +71,16 @@ function createRuntime(status: "queueing" | "match_reserved" | "ready") {
             nickname: "Sora",
           },
     opponentReady: status === "ready",
-    winnerParticipantId: null,
-    winnerClaimedByParticipantId: null,
+    winnerParticipantId: status === "result_confirmed" ? "participant-2" : null,
+    winnerClaimedByParticipantId:
+      status === "awaiting_result_approval" || status === "result_confirmed"
+        ? "participant-2"
+        : null,
     disqualifiedReason: null,
-    resultDelta: null,
-    resultConfirmedAt: null,
+    resultDelta: status === "result_confirmed" ? -4 : null,
+    resultConfirmedAt: status === "result_confirmed" ? "2026-04-12T01:15:00.000Z" : null,
     canStartMatching: false,
-    canClaimWin: false,
+    canClaimWin: status === "playing",
   };
 }
 
@@ -118,9 +139,58 @@ describe("participant match page", () => {
     render(<MatchPage />);
 
     expect(screen.getByText("相手の準備完了を待っています")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "開始前に戻る導線は次タスクで接続予定です" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "開始前キャンセル" })).not.toBeInTheDocument();
+  });
+
+  it("renders the in-progress panel for active matches", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: createRuntime("playing"),
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<MatchPage />);
+
+    expect(screen.getByText("対戦中です")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "勝利を申告する" })).toBeInTheDocument();
+  });
+
+  it("renders the claim wait panel after sending a win claim", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: createRuntime("claiming_win"),
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<MatchPage />);
+
+    expect(screen.getByText("勝利申告を送りました")).toBeInTheDocument();
+  });
+
+  it("renders the result approval panel when the opponent has claimed a win", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: createRuntime("awaiting_result_approval"),
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<MatchPage />);
+
+    expect(screen.getByText("相手の勝利申告を確認してください")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "承認する" })).toBeInTheDocument();
+  });
+
+  it("renders the result confirmed panel after a match is completed", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: createRuntime("result_confirmed"),
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<MatchPage />);
+
+    expect(screen.getByText("結果が確定しました")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "結果を確認して次へ" })).toBeInTheDocument();
   });
 
   it("redirects to join when no participant state is available", () => {

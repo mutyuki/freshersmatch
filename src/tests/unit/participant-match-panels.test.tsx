@@ -10,8 +10,21 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+import { ClaimWaitPanel } from "@/components/participant/claim-wait-panel";
+import { InProgressPanel } from "@/components/participant/in-progress-panel";
 import { MatchReservedPanel } from "@/components/participant/match-reserved-panel";
 import { QueuePanel } from "@/components/participant/queue-panel";
+import { ResultApprovalPanel } from "@/components/participant/result-approval-panel";
+import { ResultConfirmedPanel } from "@/components/participant/result-confirmed-panel";
+
+function createJsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
 
 function createRuntime(overrides: Record<string, unknown> = {}) {
   return {
@@ -98,14 +111,9 @@ describe("participant match panels", () => {
 
   it("cancels queueing and navigates back home on success", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ data: {} }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(createJsonResponse({ data: {} }));
 
     render(<QueuePanel runtime={createRuntime()} />);
 
@@ -126,18 +134,13 @@ describe("participant match panels", () => {
     const user = userEvent.setup();
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
+      createJsonResponse(
+        {
           error: {
             message: "待機終了に失敗しました。",
           },
-        }),
-        {
-          status: 409,
-          headers: {
-            "Content-Type": "application/json",
-          },
         },
+        409,
       ),
     );
 
@@ -206,6 +209,77 @@ describe("participant match panels", () => {
     expect(screen.getByText("運営スタッフ")).toBeInTheDocument();
   });
 
+  it("starts a reserved match through the ready API", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse({
+        data: createRuntime({
+          status: "ready",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 2,
+            gameTitle: "Tetris",
+            status: "reserved",
+          },
+          match: {
+            id: "match-1",
+            status: "awaiting_ready",
+            isStaffMatch: false,
+            agreedBetAmount: null,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Mikan",
+          },
+          opponentReady: false,
+        }),
+      }),
+    );
+
+    render(
+      <MatchReservedPanel
+        runtime={createRuntime({
+          status: "match_reserved",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 2,
+            gameTitle: "Tetris",
+            status: "reserved",
+          },
+          match: {
+            id: "match-1",
+            status: "reserved",
+            isStaffMatch: false,
+            agreedBetAmount: null,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Mikan",
+          },
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "対戦を開始する" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/match/ready", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          matchId: "match-1",
+        }),
+      });
+    });
+  });
+
   it("shows the ready-state primary action and hides cancel", () => {
     render(
       <MatchReservedPanel
@@ -235,9 +309,60 @@ describe("participant match panels", () => {
     );
 
     expect(screen.getByRole("button", { name: "相手の到着を待っています" })).toBeDisabled();
-    expect(
-      screen.queryByRole("button", { name: "開始前に戻る導線は次タスクで接続予定です" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "開始前キャンセル" })).not.toBeInTheDocument();
+  });
+
+  it("cancels a reserved match before start and returns home", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse({
+        data: {
+          ok: true,
+        },
+      }),
+    );
+
+    render(
+      <MatchReservedPanel
+        runtime={createRuntime({
+          status: "match_reserved",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 2,
+            gameTitle: "Tetris",
+            status: "reserved",
+          },
+          match: {
+            id: "match-1",
+            status: "reserved",
+            isStaffMatch: false,
+            agreedBetAmount: null,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Mikan",
+          },
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "開始前キャンセル" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/match/cancel-before-start", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          matchId: "match-1",
+        }),
+      });
+      expect(push).toHaveBeenCalledWith("/home");
+    });
   });
 
   it("disables actions and shows a fallback when table data is missing", () => {
@@ -266,6 +391,435 @@ describe("participant match panels", () => {
         "卓情報を確認しています。数秒たっても卓番号が出ない場合は、近くのスタッフへ声をかけてください。",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "開始導線は次タスクで接続予定です" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "対戦を開始する" })).toBeDisabled();
+  });
+
+  it("shows a start error when the ready request fails", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse(
+        {
+          error: {
+            message: "対戦開始に失敗しました。",
+          },
+        },
+        409,
+      ),
+    );
+
+    render(
+      <MatchReservedPanel
+        runtime={createRuntime({
+          status: "match_reserved",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 2,
+            gameTitle: "Tetris",
+            status: "reserved",
+          },
+          match: {
+            id: "match-1",
+            status: "reserved",
+            isStaffMatch: false,
+            agreedBetAmount: null,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Mikan",
+          },
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "対戦を開始する" }));
+
+    expect(await screen.findByText("対戦開始に失敗しました。")).toBeInTheDocument();
+  });
+
+  it("submits a win claim from the in-progress panel", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse({
+        data: createRuntime({
+          status: "claiming_win",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 5,
+            gameTitle: "Street Fighter 6",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "winner_claimed",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+          canClaimWin: false,
+        }),
+      }),
+    );
+
+    render(
+      <InProgressPanel
+        runtime={createRuntime({
+          status: "playing",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 5,
+            gameTitle: "Street Fighter 6",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "in_progress",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+          canClaimWin: true,
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "勝利を申告する" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/match/claim-win", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          matchId: "match-1",
+        }),
+      });
+    });
+  });
+
+  it("shows staff guidance instead of win claim during staff matches", () => {
+    render(
+      <InProgressPanel
+        runtime={createRuntime({
+          status: "playing",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 1,
+            gameTitle: "Tetris",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "in_progress",
+            isStaffMatch: true,
+            agreedBetAmount: 3,
+            disputeCount: 0,
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getByText("運営戦の結果はスタッフが確定します")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "勝利を申告する" })).not.toBeInTheDocument();
+  });
+
+  it("renders the claim wait panel message", () => {
+    render(
+      <ClaimWaitPanel
+        runtime={createRuntime({
+          status: "claiming_win",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 5,
+            gameTitle: "Street Fighter 6",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "winner_claimed",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getByText("勝利申告を送りました")).toBeInTheDocument();
+    expect(screen.getByText("相手の承認待ち")).toBeInTheDocument();
+  });
+
+  it("approves the opponent result claim", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse({
+        data: createRuntime({
+          status: "result_confirmed",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 3,
+            gameTitle: "Smash Bros",
+            status: "available",
+          },
+          match: {
+            id: "match-1",
+            status: "completed",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+          resultDelta: -4,
+          resultConfirmedAt: "2026-04-12T01:15:00.000Z",
+        }),
+      }),
+    );
+
+    render(
+      <ResultApprovalPanel
+        runtime={createRuntime({
+          status: "awaiting_result_approval",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 3,
+            gameTitle: "Smash Bros",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "winner_claimed",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+          winnerClaimedByParticipantId: "participant-2",
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "承認する" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/match/approve-result", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          matchId: "match-1",
+          approve: true,
+        }),
+      });
+    });
+  });
+
+  it("rejects the opponent result claim", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse({
+        data: createRuntime({
+          status: "playing",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 3,
+            gameTitle: "Smash Bros",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "in_progress",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 1,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+          canClaimWin: true,
+        }),
+      }),
+    );
+
+    render(
+      <ResultApprovalPanel
+        runtime={createRuntime({
+          status: "awaiting_result_approval",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 3,
+            gameTitle: "Smash Bros",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "winner_claimed",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+          winnerClaimedByParticipantId: "participant-2",
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "承認しない" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/match/approve-result", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          matchId: "match-1",
+          approve: false,
+        }),
+      });
+    });
+  });
+
+  it("shows an approval error when the API request fails", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse(
+        {
+          error: {
+            message: "結果承認に失敗しました。",
+          },
+        },
+        409,
+      ),
+    );
+
+    render(
+      <ResultApprovalPanel
+        runtime={createRuntime({
+          status: "awaiting_result_approval",
+          currentMatchId: "match-1",
+          table: {
+            id: "table-1",
+            tableNumber: 3,
+            gameTitle: "Smash Bros",
+            status: "in_use",
+          },
+          match: {
+            id: "match-1",
+            status: "winner_claimed",
+            isStaffMatch: false,
+            agreedBetAmount: 4,
+            disputeCount: 0,
+          },
+          opponent: {
+            participantId: "participant-2",
+            nickname: "Sora",
+          },
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "承認する" }));
+
+    expect(await screen.findByText("結果承認に失敗しました。")).toBeInTheDocument();
+  });
+
+  it("acknowledges a confirmed result and returns home", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse({
+        data: createRuntime({
+          status: "registered",
+          currentMatchId: null,
+        }),
+      }),
+    );
+
+    render(
+      <ResultConfirmedPanel
+        runtime={createRuntime({
+          status: "result_confirmed",
+          currentMatchId: "match-1",
+          resultDelta: 8,
+          resultConfirmedAt: "2026-04-12T01:15:00.000Z",
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "結果を確認して次へ" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/participant/result/ack", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      });
+      expect(push).toHaveBeenCalledWith("/home");
+    });
+  });
+
+  it("shows an acknowledge error when result confirmation fails", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      createJsonResponse(
+        {
+          error: {
+            message: "結果確認に失敗しました。",
+          },
+        },
+        409,
+      ),
+    );
+
+    render(
+      <ResultConfirmedPanel
+        runtime={createRuntime({
+          status: "result_confirmed",
+          currentMatchId: "match-1",
+          resultDelta: -4,
+          resultConfirmedAt: "2026-04-12T01:15:00.000Z",
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "結果を確認して次へ" }));
+
+    expect(await screen.findByText("結果確認に失敗しました。")).toBeInTheDocument();
   });
 });
