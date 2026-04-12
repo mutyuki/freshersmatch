@@ -19,7 +19,10 @@ type AdminSessionInvalidateUpdate = Pick<
   Database["public"]["Tables"]["admin_sessions"]["Update"],
   "is_active" | "invalidated_at"
 >;
-type AdminSessionTouchUpdate = Pick<Database["public"]["Tables"]["admin_sessions"]["Update"], "last_seen_at">;
+type AdminSessionTouchUpdate = Pick<
+  Database["public"]["Tables"]["admin_sessions"]["Update"],
+  "last_seen_at"
+>;
 type AdminSessionInsertQuery = {
   insert(values: AdminSessionInsert): Promise<{
     data: null;

@@ -325,7 +325,11 @@ export interface Database {
         Returns: { match_status: MatchStatus }[];
       };
       start_queue_and_try_match: {
-        Args: { p_participant_id: string };
+        Args: {
+          p_participant_id: string;
+          p_opponent_participant_id: string | null;
+          p_table_id: string | null;
+        };
         Returns: { match_id: string | null; participant_status: ParticipantStatus }[];
       };
       start_staff_match: {

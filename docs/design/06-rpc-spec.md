@@ -73,12 +73,19 @@
 
 - 入力:
   - `p_participant_id uuid`
+  - `p_opponent_participant_id uuid nullable`
+  - `p_table_id uuid nullable`
 - 戻り値:
   - `match_id uuid nullable`
   - `participant_status text`
 - 補足:
   - 事前条件: `chip_balance > 0` の参加者のみ待機開始を許可する
   - `chip_balance <= 0` の場合は業務条件エラーを返す
+  - `registered` の参加者は `queueing` に遷移させた上でマッチ試行する
+  - 既に `queueing` の参加者に対しては、待機状態を維持したままマッチ試行のみ行える
+  - `p_opponent_participant_id` または `p_table_id` が `null` の場合は `queueing` にするだけで終了する
+  - 指定した opponent / table は RPC 内で再検証し、無効化されていた場合は代替候補を選ばず `queueing` のまま返す
+  - match / participants / tables の多表更新はこの RPC だけが行う
 
 ### `cancel_queue`
 
