@@ -82,6 +82,21 @@ async function fetchParticipants(eventId: string): Promise<ParticipantRow[]> {
   return data ?? [];
 }
 
+async function fetchEventById(eventId: string): Promise<EventRow> {
+  const events = getAdminDashboardSupabaseClient().from("events");
+  const { data, error } = await events.select("*").eq("id", eventId).maybeSingle();
+
+  if (error) {
+    throw new AppError("event_lookup_failed", "Failed to load event.", 500);
+  }
+
+  if (!data) {
+    throw new AppError("event_not_found", "Event was not found.", 404);
+  }
+
+  return data;
+}
+
 async function fetchTables(eventId: string): Promise<TableRow[]> {
   const tables = getAdminDashboardSupabaseClient().from("tables");
   const { data, error } = await tables
@@ -139,6 +154,7 @@ function getMatchParticipantNickname(
 }
 
 export async function getAdminDashboardData(eventId: string): Promise<AdminDashboardData> {
+  const event = await fetchEventById(eventId);
   const initialParticipants = await fetchParticipants(eventId);
 
   for (const participant of initialParticipants) {
@@ -164,6 +180,7 @@ export async function getAdminDashboardData(eventId: string): Promise<AdminDashb
       .filter((adminUserId): adminUserId is string => typeof adminUserId === "string"),
   );
   const stalledThreshold = new Date(Date.now() - 120_000).toISOString();
+  const staffCandidateThreshold = Date.now() - event.staff_match_wait_seconds * 1000;
 
   return {
     eventId,
@@ -193,19 +210,25 @@ export async function getAdminDashboardData(eventId: string): Promise<AdminDashb
     queueingParticipants: participants
       .filter((participant) => participant.status === "queueing")
       .sort((left, right) => (left.queued_at ?? "").localeCompare(right.queued_at ?? ""))
-      .map((participant) => ({
-        participantId: participant.id,
-        nickname: participant.nickname,
-        queuedAt: participant.queued_at ?? participant.created_at,
-        chipBalance: participant.chip_balance,
-        isStaffMatchCandidate: false,
-      })),
+      .map((participant) => {
+        const queuedAt = participant.queued_at ?? participant.created_at;
+
+        return {
+          participantId: participant.id,
+          nickname: participant.nickname,
+          queuedAt,
+          chipBalance: participant.chip_balance,
+          isStaffMatchCandidate: new Date(queuedAt).getTime() <= staffCandidateThreshold,
+        };
+      }),
     inProgressMatches: matches
       .filter((match) => IN_PROGRESS_MATCH_STATUSES.has(match.status))
       .map((match) => ({
         matchId: match.id,
+        tableId: match.table_id,
         tableNumber: tables.find((table) => table.id === match.table_id)?.table_number ?? null,
         displayStatus: match.status,
+        participant1Id: match.player1_participant_id,
         participant1Nickname:
           getMatchParticipantNickname(participantsById, match.player1_participant_id) ?? "Unknown",
         participant2Nickname: getMatchParticipantNickname(

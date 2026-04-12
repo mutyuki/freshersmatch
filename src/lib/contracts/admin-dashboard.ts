@@ -23,7 +23,9 @@ export interface AdminDashboardQueueingParticipant {
 export interface AdminDashboardInProgressMatch {
   matchId: string;
   tableNumber: number | null;
+  tableId: string | null;
   displayStatus: MatchStatus;
+  participant1Id: string;
   participant1Nickname: string;
   participant2Nickname: string | null;
   isStaffMatch: boolean;

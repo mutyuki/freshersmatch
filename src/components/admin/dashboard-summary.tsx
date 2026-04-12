@@ -3,6 +3,7 @@
 import { AlertTriangle, Activity, RefreshCw, ShieldAlert, Table2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
+import { StaffMatchForm } from "@/components/admin/staff-match-form";
 import { useAdminDashboardRealtime } from "@/hooks/useAdminDashboardRealtime";
 import type { AdminDashboardData } from "@/lib/contracts/admin-dashboard";
 import { cn } from "@/lib/utils";
@@ -448,6 +449,15 @@ export function DashboardSummary(props: DashboardSummaryProps): JSX.Element {
                 ))
               )}
             </div>
+          </DashboardPanel>
+
+          <DashboardPanel
+            title="運営戦"
+            description="待機者を手動で運営戦へ進め、結果確定までこの画面で完了します。"
+            eyebrow="Staff Match"
+            accent="amber"
+          >
+            <StaffMatchForm data={data} refresh={refresh} />
           </DashboardPanel>
 
           <DashboardPanel

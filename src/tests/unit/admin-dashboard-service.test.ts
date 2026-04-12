@@ -257,6 +257,19 @@ describe("admin dashboard service", () => {
         };
       }
 
+      if (tableName === "events") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: createEventRow(),
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+
       throw new Error(`Unexpected table: ${tableName}`);
     });
 
@@ -281,14 +294,16 @@ describe("admin dashboard service", () => {
           nickname: "Alice",
           queuedAt: "2026-04-13T09:00:00.000Z",
           chipBalance: 14,
-          isStaffMatchCandidate: false,
+          isStaffMatchCandidate: true,
         },
       ],
       inProgressMatches: [
         {
           matchId: "match-1",
+          tableId: "table-1",
           tableNumber: 1,
           displayStatus: "winner_claimed",
+          participant1Id: "participant-2",
           participant1Nickname: "Bob",
           participant2Nickname: "Carol",
           isStaffMatch: false,

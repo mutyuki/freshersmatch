@@ -48,8 +48,10 @@ function createDashboardData(overrides: Partial<AdminDashboardData> = {}): Admin
     inProgressMatches: [
       {
         matchId: "match-1",
+        tableId: "table-1",
         tableNumber: 1,
         displayStatus: "winner_claimed",
+        participant1Id: "participant-1",
         participant1Nickname: "Alice",
         participant2Nickname: "Bob",
         isStaffMatch: false,
@@ -100,7 +102,7 @@ describe("DashboardSummary", () => {
     render(<DashboardSummary eventId="event-1" initialData={initialData} />);
 
     expect(screen.getByText("2/2")).toBeInTheDocument();
-    expect(screen.getByText(/Queue One/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Queue One/).length).toBeGreaterThan(0);
     expect(screen.getByText("Disconnect One")).toBeInTheDocument();
     expect(screen.getAllByText("Alice vs Bob").length).toBeGreaterThan(0);
     expect(useAdminDashboardRealtime).toHaveBeenCalledWith({
@@ -150,7 +152,7 @@ describe("DashboardSummary", () => {
       expect(global.fetch).toHaveBeenCalledWith("/api/admin/dashboard?eventId=event-1", {
         method: "GET",
       });
-      expect(screen.getByText(/Queue Two/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Queue Two/).length).toBeGreaterThan(0);
     });
   });
 
@@ -178,7 +180,7 @@ describe("DashboardSummary", () => {
 
     await waitFor(() => {
       expect(screen.getByText("refresh failed")).toBeInTheDocument();
-      expect(screen.getByText(/Queue One/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Queue One/).length).toBeGreaterThan(0);
     });
   });
 });
