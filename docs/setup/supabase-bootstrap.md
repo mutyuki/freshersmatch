@@ -14,15 +14,15 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 
 ## 初回投入で使うファイル
 
-- スキーマ: [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql)
-- 運営セッション補助 migration: [`supabase/migrations/0002_add_admin_sessions.sql`](../../supabase/migrations/0002_add_admin_sessions.sql)
+- migration 一式: [`supabase/migrations/`](../../supabase/migrations)
 - 初期データ: [`supabase/seed.sql`](../../supabase/seed.sql)
 
 補足:
 
+- migration は `0001` から最新番号まで、番号順にすべて適用してください
 - `0001` はイベント・参加者・卓・試合・台帳の初期スキーマです
-- `0002` は運営ログインに必要な `admin_sessions` テーブルと index を追加します
-- 今後の RPC 実装などは `0003` 以降の別 migration として追加し、既存 schema migration を書き換えない前提で進めます
+- `0002` 以降で運営セッション・RPC・運用改善などを段階的に追加しています
+- 既存 migration を書き換えず、新しい変更は新しい番号で追加する前提で進めます
 
 ## 手順 1: migration を流す
 
@@ -30,12 +30,11 @@ Supabase を初めて触る前提で、どの順番で何を押すか、どの S
 2. 対象 project を開く
 3. 左メニューの `SQL Editor` を開く
 4. `New query` を押す
-5. [`supabase/migrations/0001_init_schema.sql`](../../supabase/migrations/0001_init_schema.sql) の中身を全部貼る
-6. `Run` を押す
-7. 続けて [`supabase/migrations/0002_add_admin_sessions.sql`](../../supabase/migrations/0002_add_admin_sessions.sql) の中身を全部貼る
-8. `Run` を押す
+5. `supabase/migrations/` 配下の SQL を、ファイル名の番号順に 1 つずつ実行する
+6. 各ファイルの実行後に `Run` 結果が成功であることを確認する
+7. 最新番号まで完了したら次へ進む
 
-成功したら、以下のテーブルが作成されます。
+成功したら、以下のテーブルが作成され、必要な RPC も作成されます。
 
 - `events`
 - `admin_users`
@@ -160,6 +159,18 @@ pnpm admin:hash 1234
 
 - 先に migration が成功していない可能性があります
 - `admin_users.passcode_hash` を本番用へ差し替え忘れている可能性があります
+
+### `POST /api/participant/register` が 500 になる
+
+- Supabase 側で `column reference "event_id" is ambiguous` が出ている場合、`register_participant_and_issue_session` の修正 migration が未適用です
+- [`supabase/migrations/0009_fix_register_participant_rpc_ambiguity.sql`](../../supabase/migrations/0009_fix_register_participant_rpc_ambiguity.sql) を SQL Editor で実行してください
+- 適用後に開発サーバーを再実行し、会場コード `MATCH2026` で参加登録できるか確認してください
+
+### `POST /api/matching/start` が 500 になり、`Failed to start matching.` が返る
+
+- Supabase 側で `null value in column "table_id" of relation "matches" violates not-null constraint` が出ている場合、`start_queue_and_try_match` の早期 return 修正 migration が未適用です
+- [`supabase/migrations/0010_fix_start_queue_and_try_match_early_return.sql`](../../supabase/migrations/0010_fix_start_queue_and_try_match_early_return.sql) を SQL Editor で実行してください
+- 適用後に再度マッチング開始を押し、相手不在時は `queueing` へ遷移できることを確認してください
 
 ### どの値を参加者に見せるのか分からない
 

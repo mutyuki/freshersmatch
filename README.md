@@ -29,7 +29,7 @@ pnpm install
 3. Supabase 初期化
 
 - 手順は `docs/setup/supabase-bootstrap.md` に従ってください
-- migration は `0001_init_schema.sql` を実行
+- `supabase/migrations/` の migration を番号順にすべて実行
 - `supabase/seed.sql` を実行
 
 4. 開発サーバー起動
