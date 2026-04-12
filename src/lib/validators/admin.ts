@@ -4,14 +4,14 @@ const emptyBodySchema = z.object({}).strict();
 
 const confirmTableActionSchema = z
   .object({
-    tableId: z.string(),
+    tableId: z.string().trim().min(1),
     confirm: z.boolean(),
   })
   .strict();
 
 const confirmParticipantActionSchema = z
   .object({
-    participantId: z.string(),
+    participantId: z.string().trim().min(1),
     confirm: z.boolean(),
   })
   .strict();
@@ -58,9 +58,9 @@ export type AdminResolveMatchInput = z.infer<typeof adminResolveMatchSchema>;
 
 export const adminAdjustParticipantChipSchema = z
   .object({
-    participantId: z.string(),
-    delta: z.number(),
-    reason: z.string(),
+    participantId: z.string().trim().min(1),
+    delta: z.number().int(),
+    reason: z.string().trim().min(1),
     confirm: z.boolean(),
   })
   .strict();
@@ -77,9 +77,9 @@ export type AdminUnpauseParticipantInput = z.infer<typeof adminUnpauseParticipan
 
 export const adminDisqualifyParticipantSchema = z
   .object({
-    participantId: z.string(),
+    participantId: z.string().trim().min(1),
     mode: z.enum(["void_current_match", "lose_current_match"]),
-    reason: z.string(),
+    reason: z.string().trim().min(1),
     confirm: z.boolean(),
   })
   .strict();
