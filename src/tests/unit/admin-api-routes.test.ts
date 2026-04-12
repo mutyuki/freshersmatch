@@ -184,4 +184,27 @@ describe("admin api routes", () => {
     expect(response.status).toBe(401);
     expect(getAdminDashboardData).not.toHaveBeenCalled();
   });
+
+  it("uses the requested event id when it is provided for dashboard refresh", async () => {
+    requireAdminSession.mockResolvedValue({
+      adminUserId: "admin-1",
+    });
+    getAdminDashboardData.mockResolvedValue({
+      eventId: "event-9",
+      tables: [],
+      queueingParticipants: [],
+      inProgressMatches: [],
+      disconnectedParticipants: [],
+      disputedMatches: [],
+      stalledMatches: [],
+    });
+
+    const response = await getAdminDashboard(
+      new Request("http://localhost/api/admin/dashboard?eventId=event-9"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(getActiveEventId).not.toHaveBeenCalled();
+    expect(getAdminDashboardData).toHaveBeenCalledWith("event-9");
+  });
 });
