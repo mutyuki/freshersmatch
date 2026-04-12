@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const replace = vi.fn();
@@ -220,5 +220,26 @@ describe("participant match page", () => {
     render(<MatchPage />);
 
     expect(replace).toHaveBeenCalledWith("/join");
+  });
+
+  it("does not redirect to join on loading-to-loaded transition when runtime is restored", async () => {
+    const restoreState = {
+      state: null,
+      isLoading: true,
+      refresh: vi.fn(),
+    };
+
+    useParticipantRuntime.mockImplementation(() => restoreState);
+
+    const { rerender } = render(<MatchPage />);
+
+    restoreState.state = createRuntime("match_reserved");
+    restoreState.isLoading = false;
+    rerender(<MatchPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("卓が確定しました。すぐ向かってください")).toBeInTheDocument();
+    });
+    expect(replace).not.toHaveBeenCalledWith("/join");
   });
 });

@@ -19,6 +19,7 @@ export default function MatchPage(): JSX.Element {
   const router = useRouter();
   const { state, isLoading } = useParticipantRuntime();
   const [runtime, setRuntime] = useState<ParticipantRuntimeState | null>(state);
+  const resolvedRuntime = runtime ?? state;
 
   useEffect(() => {
     setRuntime(state);
@@ -38,10 +39,10 @@ export default function MatchPage(): JSX.Element {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !runtime) {
+    if (!isLoading && !resolvedRuntime) {
       router.replace("/join");
     }
-  }, [isLoading, router, runtime]);
+  }, [isLoading, resolvedRuntime, router]);
 
   if (isLoading) {
     return (
@@ -55,7 +56,7 @@ export default function MatchPage(): JSX.Element {
     );
   }
 
-  if (!runtime) {
+  if (!resolvedRuntime) {
     return (
       <ParticipantShell title="対戦案内を確認しています...">
         <div className="space-y-4 text-sm leading-6 text-stone-700">
@@ -69,17 +70,19 @@ export default function MatchPage(): JSX.Element {
 
   return (
     <ParticipantShell title="次の卓案内を確認する" heartbeatEnabled={true}>
-      {runtime.status === "queueing" ? <QueuePanel runtime={runtime} /> : null}
-      {runtime.status === "match_reserved" || runtime.status === "ready" ? (
-        <MatchReservedPanel runtime={runtime} />
+      {resolvedRuntime.status === "queueing" ? <QueuePanel runtime={resolvedRuntime} /> : null}
+      {resolvedRuntime.status === "match_reserved" || resolvedRuntime.status === "ready" ? (
+        <MatchReservedPanel runtime={resolvedRuntime} />
       ) : null}
-      {runtime.status === "playing" ? <InProgressPanel runtime={runtime} /> : null}
-      {runtime.status === "claiming_win" ? <ClaimWaitPanel runtime={runtime} /> : null}
-      {runtime.status === "awaiting_result_approval" ? (
-        <ResultApprovalPanel runtime={runtime} />
+      {resolvedRuntime.status === "playing" ? <InProgressPanel runtime={resolvedRuntime} /> : null}
+      {resolvedRuntime.status === "claiming_win" ? <ClaimWaitPanel runtime={resolvedRuntime} /> : null}
+      {resolvedRuntime.status === "awaiting_result_approval" ? (
+        <ResultApprovalPanel runtime={resolvedRuntime} />
       ) : null}
-      {runtime.status === "result_confirmed" ? <ResultConfirmedPanel runtime={runtime} /> : null}
-      {runtime.status === "disconnected" ? <ReconnectingOverlay /> : null}
+      {resolvedRuntime.status === "result_confirmed" ? (
+        <ResultConfirmedPanel runtime={resolvedRuntime} />
+      ) : null}
+      {resolvedRuntime.status === "disconnected" ? <ReconnectingOverlay /> : null}
     </ParticipantShell>
   );
 }

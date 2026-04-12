@@ -9,6 +9,7 @@ type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 type TableRow = Database["public"]["Tables"]["tables"]["Row"];
 type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
 type StartQueueRpcArgs = Database["public"]["Functions"]["start_queue_and_try_match"]["Args"];
+type LegacyStartQueueRpcArgs = Pick<StartQueueRpcArgs, "p_participant_id">;
 type StartQueueRpcRow =
   Database["public"]["Functions"]["start_queue_and_try_match"]["Returns"][number];
 type CancelQueueRpcRow = Database["public"]["Functions"]["cancel_queue"]["Returns"][number];
@@ -42,12 +43,32 @@ type TableQuery<TRow> = {
   select(columns: string): TableSelectQuery<TRow>;
 };
 
+type ParticipantQueueUpdateValues = Pick<
+  Database["public"]["Tables"]["participants"]["Update"],
+  "status" | "last_non_disconnect_status" | "queued_at"
+>;
+
+type ParticipantQueueUpdateQuery = {
+  update(values: ParticipantQueueUpdateValues): {
+    eq(
+      column: "id",
+      value: string,
+    ): {
+      select(columns: "id"): QueryResult<Array<Pick<ParticipantRow, "id">> | null>;
+    };
+  };
+};
+
 type MatchingServiceSupabaseClient = {
   from(table: "events"): TableQuery<EventRow>;
-  from(table: "participants"): TableQuery<ParticipantRow>;
+  from(table: "participants"): TableQuery<ParticipantRow> & ParticipantQueueUpdateQuery;
   from(table: "tables"): TableQuery<TableRow>;
   from(table: "matches"): TableQuery<MatchRow>;
   rpc(fn: "start_queue_and_try_match", args: StartQueueRpcArgs): RpcResult<StartQueueRpcRow>;
+  rpc(
+    fn: "start_queue_and_try_match",
+    args: LegacyStartQueueRpcArgs,
+  ): RpcResult<StartQueueRpcRow>;
   rpc(
     fn: "cancel_queue",
     args: Database["public"]["Functions"]["cancel_queue"]["Args"],
@@ -92,6 +113,18 @@ function normalizeStartQueueError(message: string): never {
   }
 
   throw new AppError("matching_start_failed", "Failed to start matching.", 500);
+}
+
+function isLegacyStartQueueRpcSchemaError(message: string): boolean {
+  if (!message.includes("start_queue_and_try_match")) {
+    return false;
+  }
+
+  return (
+    message.includes("Could not find the function") ||
+    message.includes("does not exist") ||
+    message.includes("function public.start_queue_and_try_match")
+  );
 }
 
 function normalizeCancelQueueError(message: string): never {
@@ -217,6 +250,30 @@ function assertCanStartQueue(participant: ParticipantRow): void {
   }
 }
 
+async function enqueueParticipantWithoutMatch(participantId: string): Promise<void> {
+  const participants = getMatchingServiceSupabaseClient().from("participants");
+  const { data, error } = await participants
+    .update({
+      status: "queueing",
+      last_non_disconnect_status: "queueing",
+      queued_at: new Date().toISOString(),
+    })
+    .eq("id", participantId)
+    .select("id");
+
+  if (error) {
+    throw new AppError(
+      "matching_start_failed",
+      "Failed to place participant in queue.",
+      500,
+    );
+  }
+
+  if (!data || data.length === 0) {
+    throw new AppError("participant_not_found", "Participant was not found.", 404);
+  }
+}
+
 type MatchAttemptPlan = {
   opponentId: string | null;
   tableId: string | null;
@@ -271,10 +328,17 @@ async function buildMatchAttemptPlan(params: {
 }
 
 async function invokeStartQueueRpc(args: StartQueueRpcArgs): Promise<StartQueueRpcRow> {
-  const { data, error } = await getMatchingServiceSupabaseClient().rpc(
+  const supabase = getMatchingServiceSupabaseClient();
+  let { data, error } = await supabase.rpc(
     "start_queue_and_try_match",
     args,
   );
+
+  if (error && isLegacyStartQueueRpcSchemaError(error.message)) {
+    ({ data, error } = await supabase.rpc("start_queue_and_try_match", {
+      p_participant_id: args.p_participant_id,
+    }));
+  }
 
   if (error) {
     normalizeStartQueueError(error.message);
@@ -341,6 +405,11 @@ export async function executeStartQueue(params: {
     participant,
     event,
   });
+
+  if (!plan.opponentId || !plan.tableId) {
+    await enqueueParticipantWithoutMatch(params.participantId);
+    return getParticipantRuntimeState(params.participantId);
+  }
 
   await invokeStartQueueRpc({
     p_participant_id: params.participantId,

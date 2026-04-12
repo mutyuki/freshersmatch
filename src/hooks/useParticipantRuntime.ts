@@ -31,6 +31,28 @@ function isUnauthorizedResponse(response: Response, payload: RuntimeResponse): b
   return response.status === 401 || payload.error?.code === "participant_session_invalid";
 }
 
+async function fetchRuntimeByMode(
+  mode: "restore" | "refresh",
+  sessionToken: string,
+): Promise<Response> {
+  return mode === "restore"
+    ? fetch("/api/participant/session/restore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionToken,
+        }),
+      })
+    : fetch("/api/participant/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+        },
+      });
+}
+
 async function parseRuntimeResponse(response: Response): Promise<ParticipantRuntimeState> {
   const payload = (await response.json()) as RuntimeResponse;
 
@@ -73,34 +95,40 @@ export function useParticipantRuntime(): {
     setIsLoading(true);
 
     try {
-      const response =
-        mode === "restore"
-          ? await fetch("/api/participant/session/restore", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                sessionToken,
-              }),
-            })
-          : await fetch("/api/participant/me", {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${sessionToken}`,
-              },
-            });
+      const response = await fetchRuntimeByMode(mode, sessionToken);
 
       const nextState = await parseRuntimeResponse(response);
       sessionTokenRef.current = sessionToken;
       setState(nextState);
     } catch (error) {
-      if (error instanceof Error && error.message === "unauthorized") {
+      const isUnauthorized = error instanceof Error && error.message === "unauthorized";
+
+      if (isUnauthorized) {
         clearParticipantSessionToken();
         sessionTokenRef.current = null;
+        setState(null);
+        return;
       }
 
-      setState(null);
+      if (mode === "restore") {
+        try {
+          const fallbackResponse = await fetchRuntimeByMode("refresh", sessionToken);
+          const nextState = await parseRuntimeResponse(fallbackResponse);
+          sessionTokenRef.current = sessionToken;
+          setState(nextState);
+          return;
+        } catch (fallbackError) {
+          const isFallbackUnauthorized =
+            fallbackError instanceof Error && fallbackError.message === "unauthorized";
+
+          if (isFallbackUnauthorized) {
+            clearParticipantSessionToken();
+            sessionTokenRef.current = null;
+            setState(null);
+            return;
+          }
+        }
+      }
     } finally {
       setIsLoading(false);
     }

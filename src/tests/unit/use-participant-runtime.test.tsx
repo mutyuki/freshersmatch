@@ -193,6 +193,112 @@ describe("useParticipantRuntime", () => {
     expect(replace).toHaveBeenCalledWith("/join");
   });
 
+  it("falls back to participant/me when restore returns a non-auth error", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: "internal_server_error",
+              message: "Temporary failure.",
+            },
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: createRuntime("registered"),
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      );
+
+    const { result } = renderHook(() => useParticipantRuntime());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/participant/session/restore", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sessionToken: "session-token",
+      }),
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/participant/me", {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer session-token",
+      },
+    });
+    expect(result.current.state?.status).toBe("registered");
+    expect(getParticipantSessionToken()).toBe("session-token");
+    expect(replace).not.toHaveBeenCalledWith("/join");
+  });
+
+  it("keeps the current runtime state when refresh fails with a non-auth error", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: createRuntime("registered"),
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: "internal_server_error",
+              message: "Temporary failure.",
+            },
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      );
+
+    const { result } = renderHook(() => useParticipantRuntime());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.state?.status).toBe("registered");
+    expect(getParticipantSessionToken()).toBe("session-token");
+    expect(replace).not.toHaveBeenCalledWith("/join");
+  });
+
   it("redirects home-route statuses away from match pages", async () => {
     mockUsePathname.mockReturnValue("/match");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(

@@ -196,6 +196,32 @@ function createSupabaseMock(data: {
         select() {
           return buildQuery(rows[table] as Array<Record<string, unknown>>);
         },
+        update(values: Record<string, unknown>) {
+          return {
+            eq(column: string, value: unknown) {
+              const tableRows = rows[table] as Array<Record<string, unknown>>;
+              const updatedRows = tableRows
+                .map((row) => {
+                  if (row[column] !== value) {
+                    return null;
+                  }
+
+                  Object.assign(row, values);
+                  return row;
+                })
+                .filter((row): row is Record<string, unknown> => row !== null);
+
+              return {
+                select() {
+                  return Promise.resolve({
+                    data: updatedRows.map((row) => ({ id: row.id })),
+                    error: null,
+                  });
+                },
+              };
+            },
+          };
+        },
       };
     },
   };
@@ -259,6 +285,69 @@ describe("matching service", () => {
     expect(getParticipantRuntimeState).toHaveBeenCalledWith("participant-1");
   });
 
+  it("falls back to legacy start queue RPC args when 3-arg RPC is unavailable", async () => {
+    getSupabaseAdminClient.mockReturnValue(
+      createSupabaseMock({
+        events: [createEventRow()],
+        participants: [
+          createParticipantRow({
+            id: "participant-1",
+            nickname: "Alice",
+          }),
+          createParticipantRow({
+            id: "participant-2",
+            nickname: "Bob",
+            status: "queueing",
+            last_non_disconnect_status: "queueing",
+            queued_at: "2026-04-12T09:00:00.000Z",
+          }),
+        ],
+        tables: [createTableRow({ id: "table-1", table_number: 1 })],
+      }),
+    );
+    rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          message:
+            "Could not find the function public.start_queue_and_try_match(p_participant_id, p_opponent_participant_id, p_table_id) in the schema cache",
+        },
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            match_id: "match-legacy-1",
+            participant_status: "match_reserved",
+          },
+        ],
+        error: null,
+      });
+    getParticipantRuntimeState.mockResolvedValue({
+      participantId: "participant-1",
+      status: "match_reserved",
+    });
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    await expect(
+      executeStartQueue({
+        participantId: "participant-1",
+      }),
+    ).resolves.toEqual({
+      participantId: "participant-1",
+      status: "match_reserved",
+    });
+
+    expect(rpc).toHaveBeenNthCalledWith(1, "start_queue_and_try_match", {
+      p_participant_id: "participant-1",
+      p_opponent_participant_id: "participant-2",
+      p_table_id: "table-1",
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "start_queue_and_try_match", {
+      p_participant_id: "participant-1",
+    });
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
   it("starts queueing without a match when no opponent exists", async () => {
     getSupabaseAdminClient.mockReturnValue(
       createSupabaseMock({
@@ -291,11 +380,7 @@ describe("matching service", () => {
       status: "queueing",
     });
 
-    expect(rpc).toHaveBeenCalledWith("start_queue_and_try_match", {
-      p_participant_id: "participant-1",
-      p_opponent_participant_id: null,
-      p_table_id: null,
-    });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("starts queueing without a match when no available table exists", async () => {
@@ -346,11 +431,7 @@ describe("matching service", () => {
 
     await executeStartQueue({ participantId: "participant-1" });
 
-    expect(rpc).toHaveBeenCalledWith("start_queue_and_try_match", {
-      p_participant_id: "participant-1",
-      p_opponent_participant_id: null,
-      p_table_id: null,
-    });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("rejects queue start when participant is already queueing before calling the RPC", async () => {
@@ -384,7 +465,15 @@ describe("matching service", () => {
             id: "participant-1",
             nickname: "Alice",
           }),
+          createParticipantRow({
+            id: "participant-2",
+            nickname: "Bob",
+            status: "queueing",
+            last_non_disconnect_status: "queueing",
+            queued_at: "2026-04-12T09:00:00.000Z",
+          }),
         ],
+        tables: [createTableRow({ id: "table-1", table_number: 1 })],
       }),
     );
     rpc.mockResolvedValue({
