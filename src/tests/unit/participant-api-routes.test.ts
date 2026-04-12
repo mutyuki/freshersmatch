@@ -85,28 +85,27 @@ describe("participant api routes", () => {
     expect(verifyParticipantSession).not.toHaveBeenCalled();
   });
 
-  it("returns a 400 json error when heartbeat body validation fails", async () => {
+  it("accepts heartbeat requests that only send bearer authorization", async () => {
+    heartbeatParticipant.mockResolvedValue(undefined);
+
     const response = await heartbeatParticipantPost(
       new Request("http://localhost/api/participant/heartbeat", {
         method: "POST",
         headers: {
           Authorization: "Bearer session-token",
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          unexpected: true,
-        }),
       }),
     );
 
     await expect(response.json()).resolves.toEqual({
-      error: {
-        code: "invalid_request",
-        message: "Request validation failed.",
+      data: {
+        ok: true,
       },
     });
-    expect(response.status).toBe(400);
-    expect(heartbeatParticipant).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(heartbeatParticipant).toHaveBeenCalledWith({
+      sessionToken: "session-token",
+    });
   });
 
   it("returns app errors from downstream services as json", async () => {

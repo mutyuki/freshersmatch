@@ -40,6 +40,14 @@ function getPreferredRoute(state: ParticipantRuntimeState): "/home" | "/match" {
   return "/home";
 }
 
+function isCurrentRouteCompatible(pathname: string, preferredRoute: "/home" | "/match"): boolean {
+  if (pathname === preferredRoute) {
+    return true;
+  }
+
+  return pathname === "/ranking" && preferredRoute === "/home";
+}
+
 function isUnauthorizedResponse(response: Response, payload: RuntimeResponse): boolean {
   return response.status === 401 || payload.error?.code === "participant_session_invalid";
 }
@@ -138,7 +146,7 @@ export function useParticipantRuntime(): {
 
     const preferredRoute = getPreferredRoute(state);
 
-    if (pathname !== preferredRoute) {
+    if (!isCurrentRouteCompatible(pathname, preferredRoute)) {
       router.replace(preferredRoute);
     }
   }, [isLoading, pathname, router, state]);

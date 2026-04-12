@@ -70,9 +70,13 @@ type TablesTableQuery = {
   };
 };
 
+type ChipLedgerParticipantFilterQuery = {
+  eq(column: "participant_id", value: string): QueryResult<ChipLedgerRow[] | null>;
+};
+
 type ChipLedgerTableQuery = {
   select(columns: string): {
-    eq(column: "match_id", value: string): QueryResult<ChipLedgerRow[] | null>;
+    eq(column: "match_id", value: string): ChipLedgerParticipantFilterQuery;
   };
 };
 
@@ -165,9 +169,12 @@ async function fetchTableById(tableId: string): Promise<TableRow> {
   return data;
 }
 
-async function fetchResultDelta(matchId: string): Promise<number | null> {
+async function fetchResultDelta(matchId: string, participantId: string): Promise<number | null> {
   const chipLedger = getParticipantServiceSupabaseClient().from("chip_ledger");
-  const { data, error } = await chipLedger.select("*").eq("match_id", matchId);
+  const { data, error } = await chipLedger
+    .select("*")
+    .eq("match_id", matchId)
+    .eq("participant_id", participantId);
 
   if (error) {
     throw new AppError(
@@ -182,7 +189,7 @@ async function fetchResultDelta(matchId: string): Promise<number | null> {
   }
 
   const relevantReasons = new Set<ChipLedgerReason>(["match_bet", "match_payout"]);
-  return data.reduce((sum, entry) => {
+  return data.reduce((sum: number, entry: ChipLedgerRow) => {
     if (!relevantReasons.has(entry.reason)) {
       return sum;
     }
@@ -222,7 +229,7 @@ async function buildParticipantRuntimeState(
 
   const resultDelta =
     participant.status === "result_confirmed" && participant.current_match_id
-      ? await fetchResultDelta(participant.current_match_id)
+      ? await fetchResultDelta(participant.current_match_id, participant.id)
       : null;
 
   const canStartMatching = participant.status === "registered" && participant.chip_balance > 0;

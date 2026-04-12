@@ -18,6 +18,7 @@ vi.mock("@/lib/db/server", () => ({
 
 import {
   generateParticipantSessionToken,
+  getParticipantBearerSessionToken,
   hashParticipantSessionToken,
   touchParticipantSession,
   verifyParticipantSession,
@@ -88,6 +89,16 @@ describe("participant session auth helpers", () => {
     expect(firstHash).toBe(secondHash);
     expect(firstHash).not.toBe(rawToken);
     expect(firstHash).toHaveLength(64);
+  });
+
+  it("extracts a bearer session token from request headers", () => {
+    const request = new Request("http://localhost/api/participant/me", {
+      headers: {
+        Authorization: "Bearer session-token",
+      },
+    });
+
+    expect(getParticipantBearerSessionToken(request)).toBe("session-token");
   });
 
   it("verifies an active participant session and returns the narrowed identity", async () => {

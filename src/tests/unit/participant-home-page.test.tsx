@@ -21,6 +21,24 @@ import HomePage from "@/app/(participant)/home/page";
 
 describe("participant home page", () => {
   beforeEach(() => {
+    const store = new Map<string, string>();
+
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        setItem: vi.fn((key: string, value: string) => {
+          store.set(key, value);
+        }),
+        removeItem: vi.fn((key: string) => {
+          store.delete(key);
+        }),
+        clear: vi.fn(() => {
+          store.clear();
+        }),
+      },
+    });
+
     replace.mockReset();
     push.mockReset();
     useParticipantRuntime.mockReset();
@@ -155,8 +173,9 @@ describe("participant home page", () => {
 
   it("starts matching through the API and navigates to match on success", async () => {
     const user = userEvent.setup();
+    window.localStorage.setItem("freshers-match.participant-session-token", "session-token");
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ data: {} }), {
         status: 200,
         headers: {
@@ -196,8 +215,55 @@ describe("participant home page", () => {
     await user.click(screen.getByRole("button", { name: "マッチングを開始する" }));
 
     await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/matching/start", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      });
       expect(push).toHaveBeenCalledWith("/match");
     });
+  });
+
+  it("shows an error instead of calling the API when the session token is missing", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null));
+
+    useParticipantRuntime.mockReturnValue({
+      state: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "registered",
+        lastNonDisconnectStatus: null,
+        chipBalance: 12,
+        currentMatchId: null,
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: true,
+        canClaimWin: false,
+      },
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<HomePage />);
+
+    await user.click(screen.getByRole("button", { name: "マッチングを開始する" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("参加セッションが見つかりません。もう一度参加登録を行ってください。"),
+    ).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("redirects to join when there is no active participant state", async () => {

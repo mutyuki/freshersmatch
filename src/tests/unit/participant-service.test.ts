@@ -24,6 +24,7 @@ const {
   tablesMaybeSingle,
   chipLedgerSelect,
   chipLedgerEq,
+  chipLedgerNestedEq,
 } = vi.hoisted(() => ({
   getSupabaseAdminClient: vi.fn(),
   generateParticipantSessionToken: vi.fn(),
@@ -46,6 +47,7 @@ const {
   tablesMaybeSingle: vi.fn(),
   chipLedgerSelect: vi.fn(),
   chipLedgerEq: vi.fn(),
+  chipLedgerNestedEq: vi.fn(),
 }));
 
 vi.mock("@/lib/db/server", () => ({
@@ -202,6 +204,9 @@ describe("participant service", () => {
 
     chipLedgerSelect.mockReturnValue({
       eq: chipLedgerEq,
+    });
+    chipLedgerEq.mockReturnValue({
+      eq: chipLedgerNestedEq,
     });
 
     generateParticipantSessionToken.mockReturnValue("raw-token");
@@ -472,33 +477,38 @@ describe("participant service", () => {
       data: table,
       error: null,
     });
-    chipLedgerEq.mockResolvedValue({
-      data: [
-        {
-          id: "ledger-1",
-          event_id: "event-1",
-          participant_id: "participant-1",
-          match_id: "match-1",
-          delta: -100,
-          reason: "match_bet",
-          balance_after: 1400,
-          created_by_admin_user_id: null,
-          created_at: "2026-04-10T09:05:00.000Z",
-        },
-        {
-          id: "ledger-2",
-          event_id: "event-1",
-          participant_id: "participant-1",
-          match_id: "match-1",
-          delta: 200,
-          reason: "match_payout",
-          balance_after: 1600,
-          created_by_admin_user_id: null,
-          created_at: "2026-04-10T09:10:00.000Z",
-        },
-      ] satisfies ChipLedgerRow[],
-      error: null,
-    });
+    chipLedgerNestedEq.mockImplementation((column: string, value: string) =>
+      Promise.resolve({
+        data:
+          column === "participant_id" && value === "participant-1"
+            ? ([
+                {
+                  id: "ledger-1",
+                  event_id: "event-1",
+                  participant_id: "participant-1",
+                  match_id: "match-1",
+                  delta: -100,
+                  reason: "match_bet",
+                  balance_after: 1400,
+                  created_by_admin_user_id: null,
+                  created_at: "2026-04-10T09:05:00.000Z",
+                },
+                {
+                  id: "ledger-3",
+                  event_id: "event-1",
+                  participant_id: "participant-1",
+                  match_id: "match-1",
+                  delta: 200,
+                  reason: "match_payout",
+                  balance_after: 1600,
+                  created_by_admin_user_id: null,
+                  created_at: "2026-04-10T09:10:00.000Z",
+                },
+              ] satisfies ChipLedgerRow[])
+            : [],
+        error: null,
+      }),
+    );
 
     await expect(getParticipantRuntimeState("participant-1")).resolves.toMatchObject({
       resultDelta: 100,
@@ -506,6 +516,8 @@ describe("participant service", () => {
       winnerParticipantId: "participant-1",
       winnerClaimedByParticipantId: "participant-1",
     });
+    expect(chipLedgerEq).toHaveBeenCalledWith("match_id", "match-1");
+    expect(chipLedgerNestedEq).toHaveBeenCalledWith("participant_id", "participant-1");
   });
 
   it("returns the disqualification reason only for disqualified participants", async () => {

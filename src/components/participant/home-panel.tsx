@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
 import type { TableStatus } from "@/lib/domain/table-status";
+import { getParticipantSessionToken } from "@/lib/session/participant-client-session";
 import { cn } from "@/lib/utils";
 
 const STATUS_COPY: Record<ParticipantRuntimeState["status"], string> = {
@@ -71,8 +72,18 @@ export function HomePanel(props: { runtime: ParticipantRuntimeState }): JSX.Elem
     setStartError(null);
 
     try {
+      const sessionToken = getParticipantSessionToken();
+
+      if (!sessionToken) {
+        setStartError("参加セッションが見つかりません。もう一度参加登録を行ってください。");
+        return;
+      }
+
       const response = await fetch("/api/matching/start", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+        },
       });
 
       const payload = (await response.json().catch(() => null)) as {

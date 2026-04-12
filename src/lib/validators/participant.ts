@@ -19,10 +19,6 @@ export const restoreParticipantSessionSchema = z
 
 export type RestoreParticipantSessionInput = z.infer<typeof restoreParticipantSessionSchema>;
 
-export const participantHeartbeatSchema = emptyBodySchema;
-
-export type ParticipantHeartbeatInput = z.infer<typeof participantHeartbeatSchema>;
-
 export const startMatchingSchema = emptyBodySchema;
 
 export type StartMatchingInput = z.infer<typeof startMatchingSchema>;

@@ -225,4 +225,29 @@ describe("useParticipantRuntime", () => {
       expect(replace).toHaveBeenCalledWith("/match");
     });
   });
+
+  it("keeps participants on the ranking page for home-route statuses", async () => {
+    mockUsePathname.mockReturnValue("/ranking");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: createRuntime("registered"),
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
+
+    const { result } = renderHook(() => useParticipantRuntime());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
