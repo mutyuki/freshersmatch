@@ -16,8 +16,9 @@ import { cn } from "@/lib/utils";
 const STATUS_COPY: Record<ParticipantRuntimeState["status"], string> = {
   unregistered: "参加登録がまだ完了していません。登録内容を確認してから進んでください。",
   registered: "準備ができたら次のランダムマッチへ進めます。まずは情報を確認しましょう。",
-  queueing: "現在は待機列に入っています。次の案内は自動で反映されます。",
-  match_reserved: "対戦の案内が進んでいます。卓番号と相手情報の確認へ進みます。",
+  queueing: "現在は待機列に入っています。卓が決まり次第、このまま対戦案内へ切り替わります。",
+  match_reserved:
+    "対戦の案内が進んでいます。卓番号と相手情報を確認して、そのまま卓へ向かってください。",
   ready: "開始準備はできています。相手の準備完了を待って次へ進みます。",
   playing: "対戦中です。卓情報と進行中の案内を確認してください。",
   claiming_win: "勝利申告を送信済みです。相手の確認が終わるまでお待ちください。",
@@ -168,7 +169,7 @@ export function HomePanel(props: { runtime: ParticipantRuntimeState }): JSX.Elem
               Table info
             </p>
             <p className="text-sm leading-6 text-stone-700">
-              卓が決まると、このカードに番号とゲーム名が表示されます。
+              卓が決まると `/match` 画面に切り替わり、番号と相手情報をまとめて確認できます。
             </p>
           </div>
 
