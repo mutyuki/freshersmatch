@@ -167,11 +167,11 @@ export async function normalizeParticipantConnectionState(params: {
 
 export async function restoreDisconnectedParticipantIfNeeded(params: {
   participantId: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const participant = await fetchParticipantById(params.participantId);
 
   if (participant.status !== "disconnected") {
-    return;
+    return false;
   }
 
   const nextStatus = participant.last_non_disconnect_status ?? "registered";
@@ -182,4 +182,6 @@ export async function restoreDisconnectedParticipantIfNeeded(params: {
     status: nextStatus,
     lastNonDisconnectStatus: participant.last_non_disconnect_status,
   });
+
+  return true;
 }

@@ -416,7 +416,7 @@ describe("participant flow", () => {
     state = createDefaultState();
     getSupabaseAdminClient.mockReturnValue(createSupabaseMock(state));
     normalizeParticipantConnectionState.mockResolvedValue(undefined);
-    restoreDisconnectedParticipantIfNeeded.mockResolvedValue(undefined);
+    restoreDisconnectedParticipantIfNeeded.mockResolvedValue(false);
   });
 
   it("rejects duplicate nicknames without mutating participant, match, table, or ledger state", async () => {
@@ -479,13 +479,14 @@ describe("participant flow", () => {
       sessionToken: replacementToken,
     });
 
-    expect(runtime.participantId).toBe(participant.id);
-    expect(runtime.status).toBe("registered");
-    expect(runtime.currentMatchId).toBeNull();
-    expect(runtime.match).toBeNull();
-    expect(runtime.table).toBeNull();
-    expect(runtime.canStartMatching).toBe(true);
-    expect(runtime.canClaimWin).toBe(false);
+    expect(runtime.restoredConnection).toBe(false);
+    expect(runtime.runtimeState.participantId).toBe(participant.id);
+    expect(runtime.runtimeState.status).toBe("registered");
+    expect(runtime.runtimeState.currentMatchId).toBeNull();
+    expect(runtime.runtimeState.match).toBeNull();
+    expect(runtime.runtimeState.table).toBeNull();
+    expect(runtime.runtimeState.canStartMatching).toBe(true);
+    expect(runtime.runtimeState.canClaimWin).toBe(false);
     expect(normalizeParticipantConnectionState).toHaveBeenCalledWith({
       participantId: participant.id,
       now: expect.any(Date),

@@ -7,6 +7,7 @@ const {
   executeReadyMatch,
   executeCancelBeforeStart,
   executeClaimWin,
+  executeCancelClaimWin,
   executeApproveResult,
   publishInvalidation,
 } = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ const {
   executeReadyMatch: vi.fn(),
   executeCancelBeforeStart: vi.fn(),
   executeClaimWin: vi.fn(),
+  executeCancelClaimWin: vi.fn(),
   executeApproveResult: vi.fn(),
   publishInvalidation: vi.fn(),
 }));
@@ -33,6 +35,7 @@ vi.mock("@/lib/services/match-service", () => ({
   executeReadyMatch,
   executeCancelBeforeStart,
   executeClaimWin,
+  executeCancelClaimWin,
   executeApproveResult,
 }));
 
@@ -42,6 +45,7 @@ vi.mock("@/lib/realtime/publisher", () => ({
 
 import { AppError } from "@/lib/domain/errors";
 import { POST as approveResultPost } from "@/app/api/match/approve-result/route";
+import { POST as cancelClaimPost } from "@/app/api/match/cancel-claim/route";
 import { POST as cancelBeforeStartPost } from "@/app/api/match/cancel-before-start/route";
 import { POST as claimWinPost } from "@/app/api/match/claim-win/route";
 import { POST as readyMatchPost } from "@/app/api/match/ready/route";
@@ -107,6 +111,50 @@ describe("matching api routes", () => {
       eventId: "event-1",
       scopes: ["participant", "admin"],
       participantIds: ["participant-1"],
+      matchId: undefined,
+      tableId: null,
+    });
+  });
+
+  it("publishes invalidation for both participants and the match when a table is assigned", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    executeStartQueue.mockResolvedValue({
+      participantId: "participant-1",
+      eventId: "event-1",
+      status: "match_reserved",
+      currentMatchId: "match-1",
+      table: {
+        id: "table-1",
+        tableNumber: 2,
+        gameTitle: "Smash Bros",
+        status: "reserved",
+      },
+      opponent: {
+        participantId: "participant-2",
+        nickname: "Bob",
+      },
+    });
+    publishInvalidation.mockResolvedValue(undefined);
+
+    const response = await startMatchingPost(
+      new Request("http://localhost/api/matching/start", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(publishInvalidation).toHaveBeenCalledWith({
+      eventId: "event-1",
+      scopes: ["participant", "match", "admin"],
+      participantIds: ["participant-1", "participant-2"],
+      matchId: "match-1",
+      tableId: "table-1",
     });
   });
 
@@ -545,6 +593,85 @@ describe("matching api routes", () => {
       error: {
         code: "match_claim_conflict",
         message: "Participant cannot claim a win for this match from the current state.",
+      },
+    });
+    expect(response.status).toBe(409);
+    expect(publishInvalidation).not.toHaveBeenCalled();
+  });
+
+  it("cancels a win claim, publishes invalidation, and returns runtime data", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    executeCancelClaimWin.mockResolvedValue({
+      participantId: "participant-1",
+      eventId: "event-1",
+      status: "playing",
+    });
+    publishInvalidation.mockResolvedValue(undefined);
+
+    const response = await cancelClaimPost(
+      new Request("http://localhost/api/match/cancel-claim", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+        body: JSON.stringify({
+          matchId: "match-1",
+        }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        status: "playing",
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(executeCancelClaimWin).toHaveBeenCalledWith({
+      participantId: "participant-1",
+      matchId: "match-1",
+    });
+    expect(publishInvalidation).toHaveBeenCalledWith({
+      eventId: "event-1",
+      scopes: ["participant", "match", "admin"],
+      participantIds: ["participant-1"],
+      matchId: "match-1",
+    });
+  });
+
+  it("returns downstream app errors from cancel-claim as json", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    executeCancelClaimWin.mockRejectedValue(
+      new AppError(
+        "match_cancel_claim_conflict",
+        "Winner claim cannot be cancelled from the current state.",
+        409,
+      ),
+    );
+
+    const response = await cancelClaimPost(
+      new Request("http://localhost/api/match/cancel-claim", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+        body: JSON.stringify({
+          matchId: "match-1",
+        }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "match_cancel_claim_conflict",
+        message: "Winner claim cannot be cancelled from the current state.",
       },
     });
     expect(response.status).toBe(409);

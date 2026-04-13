@@ -9,7 +9,11 @@ vi.mock("@/lib/db/server", () => ({
 }));
 
 import { publishInvalidation } from "@/lib/realtime/publisher";
-import { ADMIN_REALTIME_EVENT, PARTICIPANT_REALTIME_EVENT } from "@/lib/realtime/channels";
+import {
+  ADMIN_REALTIME_EVENT,
+  PARTICIPANT_REALTIME_EVENT,
+  getInvalidationChannelName,
+} from "@/lib/realtime/channels";
 
 describe("publishInvalidation", () => {
   beforeEach(() => {
@@ -58,8 +62,9 @@ describe("publishInvalidation", () => {
         eventId: "event-1",
       }),
     });
-    expect(subscribe).toHaveBeenCalledTimes(2);
-    expect(removeChannel).toHaveBeenCalledTimes(2);
+    expect(channel).toHaveBeenCalledWith(getInvalidationChannelName("event-1"));
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(removeChannel).toHaveBeenCalledTimes(1);
   });
 
   it("swallows send failures so mutation callers do not fail", async () => {
@@ -108,6 +113,63 @@ describe("publishInvalidation", () => {
       }),
     ).resolves.toBeUndefined();
 
+    expect(errorSpy).toHaveBeenCalled();
+    expect(removeChannel).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails fast when subscribe never resolves so APIs do not stall behind realtime", async () => {
+    vi.useFakeTimers();
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const removeChannel = vi.fn().mockResolvedValue(undefined);
+
+    getSupabaseAdminClient.mockReturnValue({
+      channel: vi.fn(() => ({
+        subscribe: vi.fn(),
+        send: vi.fn(),
+      })),
+      removeChannel,
+    });
+
+    const publishPromise = publishInvalidation({
+      eventId: "event-1",
+      scopes: ["participant"],
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    await expect(publishPromise).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
+    expect(removeChannel).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
+
+  it("continues publishing later scopes when one send fails", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const removeChannel = vi.fn().mockResolvedValue(undefined);
+    const send = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("socket down"))
+      .mockResolvedValueOnce("ok");
+
+    getSupabaseAdminClient.mockReturnValue({
+      channel: vi.fn(() => ({
+        subscribe: vi.fn((callback: (status: "SUBSCRIBED") => void) => {
+          callback("SUBSCRIBED");
+        }),
+        send,
+      })),
+      removeChannel,
+    });
+
+    await expect(
+      publishInvalidation({
+        eventId: "event-1",
+        scopes: ["participant", "admin"],
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(send).toHaveBeenCalledTimes(2);
     expect(errorSpy).toHaveBeenCalled();
     expect(removeChannel).toHaveBeenCalledTimes(1);
   });

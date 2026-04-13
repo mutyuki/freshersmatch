@@ -105,25 +105,28 @@ describe("participant api routes", () => {
 
   it("returns wrapped data for participant session restore", async () => {
     restoreParticipantSession.mockResolvedValue({
-      participantId: "participant-1",
-      eventId: "event-1",
-      nickname: "Alice",
-      status: "playing",
-      lastNonDisconnectStatus: "playing",
-      chipBalance: 500,
-      currentMatchId: "match-1",
-      queuedAt: null,
-      table: null,
-      match: null,
-      opponent: null,
-      opponentReady: false,
-      winnerParticipantId: null,
-      winnerClaimedByParticipantId: null,
-      disqualifiedReason: null,
-      resultDelta: null,
-      resultConfirmedAt: null,
-      canStartMatching: false,
-      canClaimWin: true,
+      runtimeState: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "playing",
+        lastNonDisconnectStatus: "playing",
+        chipBalance: 500,
+        currentMatchId: "match-1",
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: false,
+        canClaimWin: true,
+      },
+      restoredConnection: false,
     });
 
     const response = await restoreParticipantSessionPost(
@@ -139,6 +142,45 @@ describe("participant api routes", () => {
     expect(restoreParticipantSession).toHaveBeenCalledWith({
       sessionToken: "session-token",
     });
+    expect(publishInvalidation).not.toHaveBeenCalled();
+  });
+
+  it("publishes invalidation only when restore also revives a disconnected participant", async () => {
+    restoreParticipantSession.mockResolvedValue({
+      runtimeState: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "playing",
+        lastNonDisconnectStatus: "playing",
+        chipBalance: 500,
+        currentMatchId: "match-1",
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: false,
+        canClaimWin: true,
+      },
+      restoredConnection: true,
+    });
+
+    const response = await restoreParticipantSessionPost(
+      new Request("http://localhost/api/participant/session/restore", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionToken: "session-token",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
     expect(publishInvalidation).toHaveBeenCalledWith({
       eventId: "event-1",
       scopes: ["participant", "match", "admin"],

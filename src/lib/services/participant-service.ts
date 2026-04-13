@@ -327,13 +327,18 @@ export async function registerParticipant(params: {
   };
 }
 
-export async function restoreParticipantSession(params: {
-  sessionToken: string;
-}): Promise<ParticipantRuntimeState> {
+export async function restoreParticipantSession(params: { sessionToken: string }): Promise<{
+  runtimeState: ParticipantRuntimeState;
+  restoredConnection: boolean;
+}> {
   const { participantId, sessionId } = await verifyParticipantSession(params.sessionToken);
   await touchParticipantSession(sessionId);
-  await restoreDisconnectedParticipantIfNeeded({ participantId });
-  return getParticipantRuntimeState(participantId);
+  const restoredConnection = await restoreDisconnectedParticipantIfNeeded({ participantId });
+
+  return {
+    runtimeState: await getParticipantRuntimeState(participantId),
+    restoredConnection,
+  };
 }
 
 export async function getParticipantRuntimeState(

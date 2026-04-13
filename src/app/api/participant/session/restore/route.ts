@@ -9,19 +9,22 @@ export async function POST(request: Request): Promise<Response> {
     const body = await request.json();
     const input = restoreParticipantSessionSchema.parse(body);
     const result = await restoreParticipantSession(input);
-    const scopes: RealtimeScope[] = result.currentMatchId
-      ? ["participant", "match", "admin"]
-      : ["participant", "admin"];
 
-    await publishInvalidation({
-      eventId: result.eventId,
-      scopes,
-      participantIds: [result.participantId],
-      matchId: result.currentMatchId,
-      tableId: result.table?.id ?? null,
-    });
+    if (result.restoredConnection) {
+      const scopes: RealtimeScope[] = result.runtimeState.currentMatchId
+        ? ["participant", "match", "admin"]
+        : ["participant", "admin"];
 
-    return okJson(result);
+      void publishInvalidation({
+        eventId: result.runtimeState.eventId,
+        scopes,
+        participantIds: [result.runtimeState.participantId],
+        matchId: result.runtimeState.currentMatchId,
+        tableId: result.runtimeState.table?.id ?? null,
+      });
+    }
+
+    return okJson(result.runtimeState);
   } catch (error) {
     return errorJson(error instanceof Error ? error : new Error("Unknown error"));
   }

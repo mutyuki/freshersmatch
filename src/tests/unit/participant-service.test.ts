@@ -222,7 +222,7 @@ describe("participant service", () => {
     hashParticipantSessionToken.mockResolvedValue("hashed-token");
     touchParticipantSession.mockResolvedValue(undefined);
     normalizeParticipantConnectionState.mockResolvedValue(undefined);
-    restoreDisconnectedParticipantIfNeeded.mockResolvedValue(undefined);
+    restoreDisconnectedParticipantIfNeeded.mockResolvedValue(false);
   });
 
   it("registers a participant through the RPC and returns the participant row with the raw token", async () => {
@@ -339,9 +339,12 @@ describe("participant service", () => {
         sessionToken: "session-token",
       }),
     ).resolves.toMatchObject({
-      participantId: "participant-1",
-      status: "registered",
-      canStartMatching: true,
+      restoredConnection: false,
+      runtimeState: {
+        participantId: "participant-1",
+        status: "registered",
+        canStartMatching: true,
+      },
     });
 
     expect(verifyParticipantSession).toHaveBeenCalledWith("session-token");
