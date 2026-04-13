@@ -15,7 +15,7 @@ vi.mock("@/lib/services/admin-participant-service", () => ({
   listAdminParticipants,
 }));
 
-vi.mock("@/components/admin/participant-table", () => ({
+vi.mock("@/app/admin/(protected)/participants/participant-table-client", () => ({
   ParticipantTable: (props: { eventId: string; initialData: unknown }) => {
     participantTable(props);
     return <div data-testid="participant-table">Participant table</div>;

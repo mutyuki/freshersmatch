@@ -18,6 +18,10 @@ export const claimMatchWinSchema = matchIdBodySchema;
 
 export type ClaimMatchWinInput = z.infer<typeof claimMatchWinSchema>;
 
+export const cancelClaimMatchWinSchema = matchIdBodySchema;
+
+export type CancelClaimMatchWinInput = z.infer<typeof cancelClaimMatchWinSchema>;
+
 export const approveMatchResultSchema = z
   .object({
     matchId: z.string(),

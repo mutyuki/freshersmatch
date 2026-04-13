@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -125,6 +126,69 @@ describe("participant ranking page", () => {
       eventId: "event-1",
       refresh: expect.any(Function),
     });
+  });
+
+  it("still renders ranking entries under StrictMode remounts", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              eventId: "event-1",
+              entries: [
+                {
+                  participantId: "participant-1",
+                  nickname: "Alice",
+                  chipBalance: 20,
+                  status: "registered",
+                  rank: 1,
+                },
+              ],
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      ),
+    );
+
+    useParticipantRuntime.mockReturnValue({
+      state: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "registered",
+        lastNonDisconnectStatus: null,
+        chipBalance: 20,
+        currentMatchId: null,
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: true,
+        canClaimWin: false,
+      },
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(
+      <StrictMode>
+        <ParticipantRankingPage />
+      </StrictMode>,
+    );
+
+    expect(await screen.findByText("Alice")).toBeInTheDocument();
   });
 
   it("shows an error message when the ranking API fails", async () => {

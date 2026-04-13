@@ -26,6 +26,7 @@ vi.mock("@/lib/services/participant-service", () => ({
 import {
   acknowledgeResultConfirmed,
   completeMatchAndApplyChipLedger,
+  executeCancelClaimWin,
   executeApproveResult,
   executeCancelBeforeStart,
   executeClaimWin,
@@ -600,6 +601,49 @@ function createSupabaseMock(state: FakeState) {
     };
   }
 
+  function cancelClaimWin(participantId: string, matchId: string): CancelClaimMatchWinRpcRow {
+    const match = getMatch(matchId);
+    ensureParticipantInMatch(participantId, match);
+
+    if (match.status !== "winner_claimed") {
+      return {
+        match_status: match.status,
+      };
+    }
+
+    const claimerId = match.winner_claimed_by_participant_id;
+    if (!claimerId) {
+      throw new Error("Match is missing a winner claim");
+    }
+
+    if (participantId !== claimerId) {
+      throw new Error("Only the claiming participant can cancel the winner claim");
+    }
+
+    const claimer = getParticipant(participantId);
+    const opponentId = getOpponentId(match, participantId);
+    const opponent = opponentId ? getParticipant(opponentId) : null;
+
+    match.status = "in_progress";
+    match.winner_claimed_by_participant_id = null;
+    match.winner_claimed_at = null;
+    match.updated_at = nextTimestamp(state);
+
+    claimer.status = "playing";
+    claimer.last_non_disconnect_status = "playing";
+    claimer.updated_at = nextTimestamp(state);
+
+    if (opponent) {
+      opponent.status = "playing";
+      opponent.last_non_disconnect_status = "playing";
+      opponent.updated_at = nextTimestamp(state);
+    }
+
+    return {
+      match_status: match.status,
+    };
+  }
+
   function acknowledgeResult(participantId: string) {
     const participant = getParticipant(participantId);
 
@@ -663,6 +707,7 @@ function createSupabaseMock(state: FakeState) {
           | ReadyMatchRpcRow
           | CancelMatchBeforeStartRpcRow
           | ClaimMatchWinRpcRow
+          | CancelClaimMatchWinRpcRow
           | ApproveMatchResultRpcRow
           | AcknowledgeResultConfirmedRpcRow;
 
@@ -675,6 +720,9 @@ function createSupabaseMock(state: FakeState) {
             break;
           case "claim_match_win":
             row = claimWin(args.p_participant_id as string, args.p_match_id as string);
+            break;
+          case "cancel_claim_match_win":
+            row = cancelClaimWin(args.p_participant_id as string, args.p_match_id as string);
             break;
           case "approve_match_result":
             row = approveResult(
@@ -710,6 +758,8 @@ type ReadyMatchRpcRow = Database["public"]["Functions"]["ready_match"]["Returns"
 type CancelMatchBeforeStartRpcRow =
   Database["public"]["Functions"]["cancel_match_before_start"]["Returns"][number];
 type ClaimMatchWinRpcRow = Database["public"]["Functions"]["claim_match_win"]["Returns"][number];
+type CancelClaimMatchWinRpcRow =
+  Database["public"]["Functions"]["cancel_claim_match_win"]["Returns"][number];
 type ApproveMatchResultRpcRow =
   Database["public"]["Functions"]["approve_match_result"]["Returns"][number];
 type AcknowledgeResultConfirmedRpcRow =
@@ -845,6 +895,33 @@ describe("match service", () => {
     expect(state.participants["participant-1"].status).toBe("playing");
     expect(state.participants["participant-2"].status).toBe("playing");
     expect(state.chipLedger).toHaveLength(ledgerCountBeforeReject);
+  });
+
+  it("lets the claiming participant cancel their winner claim back to in_progress", async () => {
+    await executeReadyMatch({
+      participantId: "participant-1",
+      matchId: "match-1",
+    });
+    await executeReadyMatch({
+      participantId: "participant-2",
+      matchId: "match-1",
+    });
+    await executeClaimWin({
+      participantId: "participant-1",
+      matchId: "match-1",
+    });
+
+    const runtime = await executeCancelClaimWin({
+      participantId: "participant-1",
+      matchId: "match-1",
+    });
+
+    expect(runtime.status).toBe("playing");
+    expect(state.matches["match-1"].status).toBe("in_progress");
+    expect(state.matches["match-1"].winner_claimed_by_participant_id).toBeNull();
+    expect(state.matches["match-1"].winner_claimed_at).toBeNull();
+    expect(state.participants["participant-1"].status).toBe("playing");
+    expect(state.participants["participant-2"].status).toBe("playing");
   });
 
   it("approves a claimed result, pays out the winner, releases the table, and blocks double approval side effects", async () => {

@@ -12,7 +12,7 @@ vi.mock("@/lib/services/admin-dashboard-service", () => ({
   getAdminDashboardData,
 }));
 
-vi.mock("@/components/admin/dashboard-summary", () => ({
+vi.mock("@/app/admin/(protected)/dashboard/dashboard-content", () => ({
   DashboardSummary: (props: { eventId: string; initialData: unknown }) => {
     dashboardSummary(props);
     return <div data-testid="dashboard-summary">Dashboard summary</div>;

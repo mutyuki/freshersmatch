@@ -34,6 +34,9 @@ type CancelMatchBeforeStartRpcRow =
   Database["public"]["Functions"]["cancel_match_before_start"]["Returns"][number];
 type ClaimMatchWinRpcArgs = Database["public"]["Functions"]["claim_match_win"]["Args"];
 type ClaimMatchWinRpcRow = Database["public"]["Functions"]["claim_match_win"]["Returns"][number];
+type CancelClaimMatchWinRpcArgs = Database["public"]["Functions"]["cancel_claim_match_win"]["Args"];
+type CancelClaimMatchWinRpcRow =
+  Database["public"]["Functions"]["cancel_claim_match_win"]["Returns"][number];
 type ApproveMatchResultRpcArgs = Database["public"]["Functions"]["approve_match_result"]["Args"];
 type ApproveMatchResultRpcRow =
   Database["public"]["Functions"]["approve_match_result"]["Returns"][number];
@@ -51,6 +54,10 @@ type MatchServiceSupabaseClient = {
     args: CancelMatchBeforeStartRpcArgs,
   ): RpcResult<CancelMatchBeforeStartRpcRow>;
   rpc(fn: "claim_match_win", args: ClaimMatchWinRpcArgs): RpcResult<ClaimMatchWinRpcRow>;
+  rpc(
+    fn: "cancel_claim_match_win",
+    args: CancelClaimMatchWinRpcArgs,
+  ): RpcResult<CancelClaimMatchWinRpcRow>;
   rpc(
     fn: "approve_match_result",
     args: ApproveMatchResultRpcArgs,
@@ -196,7 +203,39 @@ function normalizeClaimWinError(message: string): never {
   throw new AppError("match_claim_failed", "Failed to claim the match result.", 500);
 }
 
-function normalizeApproveResultError(message: string): never {
+function normalizeCancelClaimWinError(message: string): never {
+  if (message.includes("Participant not found")) {
+    throw new AppError("participant_not_found", "Participant was not found.", 404);
+  }
+
+  if (message.includes("Match not found")) {
+    throw new AppError("match_not_found", "Match was not found.", 404);
+  }
+
+  if (
+    message.includes("not part of the match") ||
+    message.includes("winner_claimed") ||
+    message.includes("Only the claiming participant can cancel") ||
+    message.includes("completed") ||
+    message.includes("staff match")
+  ) {
+    throw new DomainConflictError(
+      "match_cancel_claim_conflict",
+      "Winner claim cannot be cancelled from the current state.",
+    );
+  }
+
+  throw new AppError("match_cancel_claim_failed", "Failed to cancel the winner claim.", 500);
+}
+
+function normalizeApproveResultError(params: {
+  message: string;
+  participantId: string;
+  matchId: string;
+  approve: boolean;
+}): never {
+  const { message } = params;
+
   if (message.includes("Participant not found")) {
     throw new AppError("participant_not_found", "Participant was not found.", 404);
   }
@@ -209,7 +248,8 @@ function normalizeApproveResultError(message: string): never {
     message.includes("not part of the match") ||
     message.includes("winner_claimed") ||
     message.includes("already resolved") ||
-    message.includes("claiming participant cannot approve")
+    message.includes("claiming participant cannot approve") ||
+    message.includes("Staff matches are not approved by participants")
   ) {
     throw new DomainConflictError(
       "match_approval_conflict",
@@ -217,6 +257,7 @@ function normalizeApproveResultError(message: string): never {
     );
   }
 
+  console.error("Unexpected approve_match_result RPC error.", params);
   throw new AppError("match_approval_failed", "Failed to approve the match result.", 500);
 }
 
@@ -327,6 +368,32 @@ export async function executeClaimWin(params: {
   return getParticipantRuntimeState(participant.id);
 }
 
+export async function executeCancelClaimWin(params: {
+  participantId: string;
+  matchId: string;
+}): Promise<ParticipantRuntimeState> {
+  const { participant } = await assertParticipantAndMatch(params);
+  const supabase = getMatchServiceSupabaseClient();
+  const { data, error } = await supabase.rpc("cancel_claim_match_win", {
+    p_participant_id: participant.id,
+    p_match_id: params.matchId,
+  });
+
+  if (error) {
+    normalizeCancelClaimWinError(error.message);
+  }
+
+  if (!data?.[0]) {
+    throw new AppError(
+      "match_cancel_claim_failed",
+      "Match cancel-claim RPC returned no result.",
+      500,
+    );
+  }
+
+  return getParticipantRuntimeState(participant.id);
+}
+
 export async function executeApproveResult(params: {
   participantId: string;
   matchId: string;
@@ -341,7 +408,12 @@ export async function executeApproveResult(params: {
   });
 
   if (error) {
-    normalizeApproveResultError(error.message);
+    normalizeApproveResultError({
+      message: error.message,
+      participantId: participant.id,
+      matchId: params.matchId,
+      approve: params.approve,
+    });
   }
 
   if (!data?.[0]) {

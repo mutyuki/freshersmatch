@@ -36,6 +36,16 @@ export function useRealtimeRefresh(params: {
     const supabase = createRealtimeClient();
     let isDisposed = false;
     const channelStatuses = new Map<string, RealtimeSubscribeStatus>();
+    const groupedChannels = new Map<string, ChannelConfig[]>();
+
+    for (const config of params.channels) {
+      const existing = groupedChannels.get(config.channelName);
+      if (existing) {
+        existing.push(config);
+      } else {
+        groupedChannels.set(config.channelName, [config]);
+      }
+    }
 
     async function runRefresh(): Promise<void> {
       if (refreshInFlightRef.current) {
@@ -74,56 +84,62 @@ export function useRealtimeRefresh(params: {
 
     function areAllChannelsSubscribed(): boolean {
       return (
-        params.channels.length > 0 &&
-        params.channels.every((config) => channelStatuses.get(config.channelName) === "SUBSCRIBED")
+        groupedChannels.size > 0 &&
+        Array.from(groupedChannels.keys()).every(
+          (channelName) => channelStatuses.get(channelName) === "SUBSCRIBED",
+        )
       );
     }
 
-    const subscribedChannels = params.channels.map((config) => {
-      const channel = supabase.channel(config.channelName);
+    const subscribedChannels = Array.from(groupedChannels.entries()).map(
+      ([channelName, configs]) => {
+        const channel = supabase.channel(channelName);
 
-      channel.on<RealtimeInvalidationPayload>(
-        BROADCAST_LISTEN_TYPE,
-        { event: config.eventType },
-        ({ payload }) => {
+        for (const config of configs) {
+          channel.on<RealtimeInvalidationPayload>(
+            BROADCAST_LISTEN_TYPE,
+            { event: config.eventType },
+            ({ payload }) => {
+              if (isDisposed) {
+                return;
+              }
+
+              if (config.shouldRefresh && !config.shouldRefresh(payload)) {
+                return;
+              }
+
+              void runRefresh();
+            },
+          );
+        }
+
+        channel.subscribe((status: RealtimeSubscribeStatus) => {
           if (isDisposed) {
             return;
           }
 
-          if (config.shouldRefresh && !config.shouldRefresh(payload)) {
+          channelStatuses.set(channelName, status);
+
+          if (areAllChannelsSubscribed()) {
+            stopFallbackPolling();
+
+            if (reconnectPendingRef.current) {
+              reconnectPendingRef.current = false;
+              void runRefresh();
+            }
+
             return;
           }
 
-          void runRefresh();
-        },
-      );
-
-      channel.subscribe((status: RealtimeSubscribeStatus) => {
-        if (isDisposed) {
-          return;
-        }
-
-        channelStatuses.set(config.channelName, status);
-
-        if (areAllChannelsSubscribed()) {
-          stopFallbackPolling();
-
-          if (reconnectPendingRef.current) {
-            reconnectPendingRef.current = false;
-            void runRefresh();
+          if (status === "CHANNEL_ERROR" || status === "CLOSED" || status === "TIMED_OUT") {
+            reconnectPendingRef.current = true;
+            startFallbackPolling();
           }
+        });
 
-          return;
-        }
-
-        if (status === "CHANNEL_ERROR" || status === "CLOSED" || status === "TIMED_OUT") {
-          reconnectPendingRef.current = true;
-          startFallbackPolling();
-        }
-      });
-
-      return channel;
-    });
+        return channel;
+      },
+    );
 
     return () => {
       isDisposed = true;

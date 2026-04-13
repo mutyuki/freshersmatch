@@ -3,33 +3,28 @@ import { errorJson, okJson } from "@/lib/api/response";
 import { verifyParticipantSession } from "@/lib/auth/participant-session";
 import { AppError } from "@/lib/domain/errors";
 import { publishInvalidation } from "@/lib/realtime/publisher";
-import { executeApproveResult } from "@/lib/services/match-service";
-import { approveMatchResultSchema } from "@/lib/validators/match";
+import { executeCancelClaimWin } from "@/lib/services/match-service";
+import { cancelClaimMatchWinSchema } from "@/lib/validators/match";
 
 export async function POST(request: Request): Promise<Response> {
   let participantId: string | null = null;
   let matchId: string | null = null;
-  let approve: boolean | null = null;
 
   try {
     const body = await request.json();
-    const input = approveMatchResultSchema.parse(body);
+    const input = cancelClaimMatchWinSchema.parse(body);
     matchId = input.matchId;
-    approve = input.approve;
     const sessionToken = getParticipantBearerSessionToken(request);
     const session = await verifyParticipantSession(sessionToken);
     participantId = session.participantId;
-    const runtime = await executeApproveResult({
+    const runtime = await executeCancelClaimWin({
       participantId,
       matchId: input.matchId,
-      approve: input.approve,
     });
 
     await publishInvalidation({
       eventId: runtime.eventId,
-      scopes: input.approve
-        ? ["participant", "match", "admin", "ranking"]
-        : ["participant", "match", "admin"],
+      scopes: ["participant", "match", "admin"],
       participantIds: [participantId],
       matchId: input.matchId,
     });
@@ -37,10 +32,9 @@ export async function POST(request: Request): Promise<Response> {
     return okJson(runtime);
   } catch (error) {
     if (!(error instanceof AppError) || error.status >= 500) {
-      console.error("approve-result route failed.", {
+      console.error("cancel-claim route failed.", {
         participantId,
         matchId,
-        approve,
         error,
       });
     }

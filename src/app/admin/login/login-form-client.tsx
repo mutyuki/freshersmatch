@@ -4,17 +4,10 @@ import type { FormEvent, JSX } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldTitle,
-} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface AdminLoginSuccess {
   data: {
@@ -40,7 +33,7 @@ function getErrorMessage(error: AdminLoginFailure["error"]): string {
   }
 }
 
-export function AdminLoginForm(): JSX.Element {
+export function LoginFormClient(): JSX.Element {
   const router = useRouter();
   const [passcode, setPasscode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -62,9 +55,7 @@ export function AdminLoginForm(): JSX.Element {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          passcode,
-        }),
+        body: JSON.stringify({ passcode }),
       });
 
       const payload = (await response.json()) as AdminLoginSuccess | AdminLoginFailure;
@@ -74,7 +65,6 @@ export function AdminLoginForm(): JSX.Element {
           setErrorMessage(getErrorMessage(payload.error));
           return;
         }
-
         setErrorMessage("ログインに失敗しました。もう一度お試しください。");
         return;
       }
@@ -89,40 +79,25 @@ export function AdminLoginForm(): JSX.Element {
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
-      <FieldGroup className="gap-5">
-        <Field>
-          <FieldLabel htmlFor="passcode">
-            <FieldTitle>運営パスコード</FieldTitle>
-            <FieldDescription>
-              会場運営用に配布されたパスコードを入力すると、現在のブラウザだけに管理セッションを発行します。
-            </FieldDescription>
-          </FieldLabel>
-          <FieldContent>
-            <Input
-              id="passcode"
-              name="passcode"
-              aria-label="運営パスコード"
-              autoComplete="current-password"
-              enterKeyHint="go"
-              placeholder="Passcode"
-              type="password"
-              value={passcode}
-              onChange={(event) => setPasscode(event.target.value)}
-              disabled={isSubmitting}
-              className="h-12 rounded-2xl border-slate-300 bg-slate-50 px-4 text-base text-slate-950 placeholder:text-slate-400"
-            />
-          </FieldContent>
-        </Field>
-      </FieldGroup>
-
-      <FieldError>{errorMessage}</FieldError>
-
-      <Button
-        type="submit"
-        size="lg"
-        disabled={isSubmitting}
-        className="h-12 w-full rounded-2xl bg-slate-950 text-base font-semibold text-white hover:bg-slate-800"
-      >
+      <div className="block space-y-2">
+        <Label htmlFor="passcode">運営パスコード</Label>
+        <Input
+          id="passcode"
+          aria-label="運営パスコード"
+          className="h-12"
+          name="passcode"
+          placeholder="Passcode"
+          type="password"
+          value={passcode}
+          onChange={(event) => setPasscode(event.target.value)}
+        />
+      </div>
+      {errorMessage ? (
+        <Alert variant="destructive">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      ) : null}
+      <Button type="submit" size="lg" disabled={isSubmitting} className="h-12 w-full">
         {isSubmitting ? "ログインしています..." : "ログイン"}
       </Button>
     </form>

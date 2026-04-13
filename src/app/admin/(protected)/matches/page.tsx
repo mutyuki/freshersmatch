@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { MatchTable } from "@/components/admin/match-table";
+import { MatchTable } from "@/app/admin/(protected)/matches/match-table-client";
 import type { AdminMatchListItem } from "@/lib/contracts/admin-matches";
 import { getActiveEventId } from "@/lib/services/admin-dashboard-service";
 import { listAdminMatches } from "@/lib/services/admin-match-service";

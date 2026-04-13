@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { TableGrid } from "@/components/admin/table-grid";
+import { TableGrid } from "@/app/admin/(protected)/tables/table-grid-client";
 import type { AdminTableListItem } from "@/lib/contracts/admin-tables";
 import { getActiveEventId } from "@/lib/services/admin-dashboard-service";
 import { listAdminTables } from "@/lib/services/admin-match-service";

@@ -20,8 +20,13 @@ export interface RealtimeInvalidationPayload {
   occurredAt: string;
 }
 
+export function getInvalidationChannelName(eventId: string): string {
+  return `event:${eventId}:invalidation`;
+}
+
 export function getChannelName(eventId: string, scope: RealtimeScope): string {
-  return `event:${eventId}:${scope}`;
+  void scope;
+  return getInvalidationChannelName(eventId);
 }
 
 export function getParticipantChannelName(eventId: string): string {

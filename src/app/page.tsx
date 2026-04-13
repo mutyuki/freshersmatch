@@ -2,8 +2,8 @@
 
 import { useEffect, type JSX } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2Icon } from "lucide-react";
 
-import { Spinner } from "@/components/ui/spinner";
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
 import { getPreferredParticipantRoute } from "@/lib/participant-route";
 import {
@@ -81,18 +81,18 @@ export default function RootPage(): JSX.Element {
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.14),_transparent_45%),linear-gradient(180deg,_#f7f1e8_0%,_#efe5d6_100%)] px-6 py-16">
-      <div className="w-full max-w-sm rounded-[2rem] border border-stone-200/80 bg-white/85 px-6 py-8 text-center shadow-[0_24px_80px_rgba(120,53,15,0.12)] backdrop-blur-sm">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-stone-900 text-stone-50">
-          <Spinner className="size-5" />
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-16">
+      <div className="w-full max-w-sm rounded-2xl border bg-card px-6 py-8 text-center shadow-sm">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Loader2Icon role="status" aria-label="Loading" className="size-5 animate-spin" />
         </div>
-        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.32em] text-stone-500">
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">
           Freshers Match
         </p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-stone-900">
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
           参加情報を確認しています
         </h1>
-        <p className="mt-3 text-sm leading-6 text-stone-700">
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
           保存済みのセッションを読み込んでいます。画面が切り替わるまでそのままお待ちください。
         </p>
       </div>

@@ -13,7 +13,6 @@ import { useParticipantRealtime } from "@/hooks/useParticipantRealtime";
 import {
   MATCH_REALTIME_EVENT,
   PARTICIPANT_REALTIME_EVENT,
-  getMatchChannelName,
   getParticipantChannelName,
 } from "@/lib/realtime/channels";
 
@@ -154,7 +153,7 @@ describe("useParticipantRealtime", () => {
       }),
     );
 
-    const matchChannel = channels.get(getMatchChannelName("event-1"));
+    const matchChannel = channels.get(getParticipantChannelName("event-1"));
 
     await act(async () => {
       matchChannel?.broadcastCallbacks[MATCH_REALTIME_EVENT]({
@@ -184,7 +183,7 @@ describe("useParticipantRealtime", () => {
     );
 
     const participantChannel = channels.get(getParticipantChannelName("event-1"));
-    const matchChannel = channels.get(getMatchChannelName("event-1"));
+    const matchChannel = channels.get(getParticipantChannelName("event-1"));
 
     act(() => {
       participantChannel?.subscribeCallback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR);
@@ -218,7 +217,7 @@ describe("useParticipantRealtime", () => {
     expect(refresh).toHaveBeenCalledTimes(2);
   });
 
-  it("removes both channels on unmount", () => {
+  it("removes the shared invalidation channel on unmount", () => {
     const { channels, removeChannel } = setupRealtimeClient();
 
     const { unmount } = renderHook(() =>
@@ -231,12 +230,12 @@ describe("useParticipantRealtime", () => {
     );
 
     const participantChannel = channels.get(getParticipantChannelName("event-1"));
-    const matchChannel = channels.get(getMatchChannelName("event-1"));
+    const matchChannel = channels.get(getParticipantChannelName("event-1"));
 
     unmount();
 
-    expect(removeChannel).toHaveBeenCalledTimes(2);
+    expect(removeChannel).toHaveBeenCalledTimes(1);
     expect(removeChannel).toHaveBeenCalledWith(participantChannel?.channel);
-    expect(removeChannel).toHaveBeenCalledWith(matchChannel?.channel);
+    expect(matchChannel).toBe(participantChannel);
   });
 });

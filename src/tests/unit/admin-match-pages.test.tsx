@@ -20,14 +20,14 @@ vi.mock("@/lib/services/admin-match-service", () => ({
   listAdminTables,
 }));
 
-vi.mock("@/components/admin/match-table", () => ({
+vi.mock("@/app/admin/(protected)/matches/match-table-client", () => ({
   MatchTable: (props: { eventId: string; initialData: unknown }) => {
     matchTable(props);
     return <div data-testid="match-table">Match table</div>;
   },
 }));
 
-vi.mock("@/components/admin/table-grid", () => ({
+vi.mock("@/app/admin/(protected)/tables/table-grid-client", () => ({
   TableGrid: (props: { eventId: string; initialData: unknown }) => {
     tableGrid(props);
     return <div data-testid="table-grid">Table grid</div>;

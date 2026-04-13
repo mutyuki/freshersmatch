@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { ParticipantTable } from "@/components/admin/participant-table";
+import { ParticipantTable } from "@/app/admin/(protected)/participants/participant-table-client";
 import type { AdminParticipantListItem } from "@/lib/contracts/admin-participants";
 import { getActiveEventId } from "@/lib/services/admin-dashboard-service";
 import { listAdminParticipants } from "@/lib/services/admin-participant-service";

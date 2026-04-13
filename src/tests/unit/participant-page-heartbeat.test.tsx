@@ -1,10 +1,9 @@
-import type { ReactNode } from "react";
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { replace, participantShell, useParticipantRuntime, useRankingRealtime } = vi.hoisted(() => ({
+const { replace, useParticipantHeartbeat, useParticipantRuntime, useRankingRealtime } = vi.hoisted(() => ({
   replace: vi.fn(),
-  participantShell: vi.fn(),
+  useParticipantHeartbeat: vi.fn(),
   useParticipantRuntime: vi.fn(),
   useRankingRealtime: vi.fn(),
 }));
@@ -15,11 +14,8 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/components/participant/participant-shell", () => ({
-  ParticipantShell: (props: { title: string; children: ReactNode; heartbeatEnabled?: boolean }) => {
-    participantShell(props);
-    return <div data-testid="participant-shell">{props.children}</div>;
-  },
+vi.mock("@/hooks/useParticipantHeartbeat", () => ({
+  useParticipantHeartbeat,
 }));
 
 vi.mock("@/hooks/useParticipantRuntime", () => ({
@@ -61,7 +57,7 @@ function createRuntime() {
 describe("participant page heartbeat wiring", () => {
   beforeEach(() => {
     replace.mockReset();
-    participantShell.mockReset();
+    useParticipantHeartbeat.mockReset();
     useParticipantRuntime.mockReset();
     useRankingRealtime.mockReset();
     vi.restoreAllMocks();
@@ -70,11 +66,7 @@ describe("participant page heartbeat wiring", () => {
   it("keeps heartbeat disabled on the join page", () => {
     render(<JoinPage />);
 
-    expect(participantShell).toHaveBeenCalledWith(
-      expect.objectContaining({
-        heartbeatEnabled: false,
-      }),
-    );
+    expect(useParticipantHeartbeat).not.toHaveBeenCalled();
   });
 
   it("enables heartbeat on the home page", () => {
@@ -86,11 +78,7 @@ describe("participant page heartbeat wiring", () => {
 
     render(<HomePage />);
 
-    expect(participantShell).toHaveBeenCalledWith(
-      expect.objectContaining({
-        heartbeatEnabled: true,
-      }),
-    );
+    expect(useParticipantHeartbeat).toHaveBeenCalledWith(true);
   });
 
   it("enables heartbeat on the ranking page", () => {
@@ -119,10 +107,6 @@ describe("participant page heartbeat wiring", () => {
 
     render(<ParticipantRankingPage />);
 
-    expect(participantShell).toHaveBeenCalledWith(
-      expect.objectContaining({
-        heartbeatEnabled: true,
-      }),
-    );
+    expect(useParticipantHeartbeat).toHaveBeenCalledWith(true);
   });
 });

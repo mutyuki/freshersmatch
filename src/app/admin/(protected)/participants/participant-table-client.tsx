@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
-import { StatusBadge } from "@/components/participant/status-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -38,6 +37,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminParticipantsRealtime } from "@/hooks/useAdminParticipantsRealtime";
 import type { AdminParticipantListItem } from "@/lib/contracts/admin-participants";
+import { participantStatusConfig } from "@/lib/ui/participant-status";
 import { cn } from "@/lib/utils";
 
 type ParticipantResponse = {
@@ -91,6 +91,16 @@ function getRowTone(status: AdminParticipantListItem["status"]): string {
     default:
       return "";
   }
+}
+
+function StatusBadge({ status }: { status: AdminParticipantListItem["status"] }): JSX.Element {
+  const config = participantStatusConfig[status];
+
+  return (
+    <Badge variant="outline" className={cn("rounded-full px-3 py-1 text-xs", config.className)}>
+      {config.label}
+    </Badge>
+  );
 }
 
 export function ParticipantTable(props: ParticipantTableProps): JSX.Element {

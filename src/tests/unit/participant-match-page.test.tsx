@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
+
 const replace = vi.fn();
 const useParticipantRuntime = vi.fn();
 
@@ -168,6 +170,7 @@ describe("participant match page", () => {
     render(<MatchPage />);
 
     expect(screen.getByText("勝利申告を送りました")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "勝利申告を取り消す" })).toBeInTheDocument();
   });
 
   it("renders the result approval panel when the opponent has claimed a win", () => {
@@ -223,7 +226,11 @@ describe("participant match page", () => {
   });
 
   it("does not redirect to join on loading-to-loaded transition when runtime is restored", async () => {
-    const restoreState = {
+    const restoreState: {
+      state: ParticipantRuntimeState | null;
+      isLoading: boolean;
+      refresh: ReturnType<typeof vi.fn>;
+    } = {
       state: null,
       isLoading: true,
       refresh: vi.fn(),

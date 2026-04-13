@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { DashboardSummary } from "@/components/admin/dashboard-summary";
+import { DashboardSummary } from "@/app/admin/(protected)/dashboard/dashboard-content";
 import { getActiveEventId, getAdminDashboardData } from "@/lib/services/admin-dashboard-service";
 
 export default async function AdminDashboardPage(): Promise<JSX.Element> {

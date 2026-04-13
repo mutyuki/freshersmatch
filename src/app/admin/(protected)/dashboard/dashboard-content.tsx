@@ -3,7 +3,7 @@
 import { AlertTriangle, Activity, RefreshCw, ShieldAlert, Table2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
-import { StaffMatchForm } from "@/components/admin/staff-match-form";
+import { StaffMatchForm } from "@/app/admin/(protected)/dashboard/staff-match-form";
 import { useAdminDashboardRealtime } from "@/hooks/useAdminDashboardRealtime";
 import type { AdminDashboardData } from "@/lib/contracts/admin-dashboard";
 import { cn } from "@/lib/utils";

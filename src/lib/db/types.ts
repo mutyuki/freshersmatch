@@ -272,6 +272,10 @@ export interface Database {
         Args: { p_participant_id: string; p_match_id: string };
         Returns: { match_status: MatchStatus }[];
       };
+      cancel_claim_match_win: {
+        Args: { p_participant_id: string; p_match_id: string };
+        Returns: { match_status: MatchStatus }[];
+      };
       disqualify_participant: {
         Args: {
           p_admin_user_id: string;

@@ -1,11 +1,9 @@
-import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const { redirect, requireAdminSession, adminShell } = vi.hoisted(() => ({
+const { redirect, requireAdminSession } = vi.hoisted(() => ({
   redirect: vi.fn(),
   requireAdminSession: vi.fn(),
-  adminShell: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -14,13 +12,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/auth/admin-session", () => ({
   requireAdminSession,
-}));
-
-vi.mock("@/components/admin/admin-shell", () => ({
-  AdminShell: (props: { children: ReactNode }) => {
-    adminShell(props);
-    return <div data-testid="admin-shell">{props.children}</div>;
-  },
 }));
 
 import AdminLayout from "@/app/admin/(protected)/layout";
@@ -38,9 +29,9 @@ describe("admin protected layout", () => {
     expect(requireAdminSession).toHaveBeenCalledTimes(1);
     expect(redirect).not.toHaveBeenCalled();
     render(result);
-    expect(screen.getByTestId("admin-shell")).toBeInTheDocument();
+    expect(screen.getByText("Admin Console")).toBeInTheDocument();
     expect(screen.getByText("Protected content")).toBeInTheDocument();
-    expect(adminShell).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("navigation", { name: "Admin navigation" })).toBeInTheDocument();
   });
 
   it("redirects to the admin login page when the admin session is missing", async () => {

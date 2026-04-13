@@ -3,18 +3,63 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { useRouter } from "next/navigation";
 
-import { ParticipantShell } from "@/components/participant/participant-shell";
-import { RankingList } from "@/components/ranking/ranking-list";
-import { useRankingRealtime } from "@/hooks/useRankingRealtime";
-import type { RankingSnapshot } from "@/lib/contracts/ranking";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { useParticipantHeartbeat } from "@/hooks/useParticipantHeartbeat";
 import { useParticipantRuntime } from "@/hooks/useParticipantRuntime";
+import { useRankingRealtime } from "@/hooks/useRankingRealtime";
+import type { RankingEntry, RankingSnapshot } from "@/lib/contracts/ranking";
+import { loadRankingSnapshot } from "@/lib/ranking/load-ranking-snapshot";
+import { cn } from "@/lib/utils";
 
-type RankingResponse = {
-  data?: RankingSnapshot;
-  error?: {
-    message?: string;
-  };
-};
+function getStatusLabel(status: RankingEntry["status"]): string | null {
+  return status === "disqualified" ? "失格" : null;
+}
+
+function ParticipantRankingList(props: {
+  entries: RankingEntry[];
+  highlightParticipantId: string;
+}): JSX.Element {
+  return (
+    <div className="space-y-3">
+      {props.entries.map((entry) => {
+        const isHighlighted = entry.participantId === props.highlightParticipantId;
+        const statusLabel = getStatusLabel(entry.status);
+
+        return (
+          <article
+            key={entry.participantId}
+            aria-current={isHighlighted ? "true" : undefined}
+            className={cn("rounded-xl border bg-card p-4", isHighlighted && "border-primary")}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={isHighlighted ? "default" : "secondary"}>{entry.rank}</Badge>
+                  {isHighlighted ? <Badge>YOU</Badge> : null}
+                  {statusLabel ? <Badge variant="destructive">{statusLabel}</Badge> : null}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold text-foreground">{entry.nickname}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                    Official chips
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-semibold tracking-tight text-foreground">
+                  {entry.chipBalance.toLocaleString("ja-JP")}
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">chips</p>
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ParticipantRankingPage(): JSX.Element {
   const router = useRouter();
@@ -24,7 +69,11 @@ export default function ParticipantRankingPage(): JSX.Element {
   const [rankingError, setRankingError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
+  useParticipantHeartbeat(!isLoading && Boolean(state));
+
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
       isMountedRef.current = false;
     };
@@ -41,20 +90,13 @@ export default function ParticipantRankingPage(): JSX.Element {
     setRankingError(null);
 
     try {
-      const response = await fetch("/api/ranking", {
-        method: "GET",
-      });
-      const payload = (await response.json().catch(() => null)) as RankingResponse | null;
-
-      if (!response.ok || !payload?.data) {
-        throw new Error(
-          payload?.error?.message ??
-            "ランキングの読み込みに失敗しました。少し待ってからもう一度お試しください。",
-        );
-      }
+      const snapshot = await loadRankingSnapshot(
+        "ランキングの読み込みに失敗しました。少し待ってからもう一度お試しください。",
+        "ランキングの取得に時間がかかっています。通信状況を確認して、もう一度開き直してください。",
+      );
 
       if (isMountedRef.current) {
-        setEntries(payload.data.entries);
+        setEntries(snapshot.entries);
       }
     } catch (error) {
       if (isMountedRef.current) {
@@ -86,55 +128,70 @@ export default function ParticipantRankingPage(): JSX.Element {
     refresh: loadRanking,
   });
 
-  if (isLoading) {
-    return (
-      <ParticipantShell title="順位表を確認しています...">
-        <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm leading-6 text-stone-700">
-          保存済みの参加情報を読み込み中です。画面をそのまま開いたままでお待ちください。
-        </div>
-      </ParticipantShell>
-    );
-  }
-
-  if (!state) {
-    return (
-      <ParticipantShell title="順位表を確認しています...">
-        <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm leading-6 text-stone-700">
-          セッションが見つからないため、参加登録画面へ戻ります。
-        </div>
-      </ParticipantShell>
-    );
-  }
-
   return (
-    <ParticipantShell title="いまの順位を見つける" heartbeatEnabled={true}>
-      <div className="space-y-5">
-        <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm leading-6 text-stone-700">
-          自分の行を目で追いやすいように強調表示しています。現在の所持チップと順位を確認して、次の一戦の目標を決めましょう。
+    <main className="flex min-h-full flex-col gap-4">
+      <header className="space-y-3 px-1 pb-2 pt-4">
+        <p className="inline-flex w-fit items-center rounded-full border px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          Freshers Match
+        </p>
+        <div className="space-y-2">
+          <p className="text-sm leading-6 text-muted-foreground">
+            自分の行を目で追いやすいように強調表示しています。現在の所持チップと順位を確認して、次の一戦の目標を決めましょう。
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            {isLoading || !state ? "順位表を確認しています..." : "いまの順位を見つける"}
+          </h1>
         </div>
+      </header>
 
-        {isRankingLoading ? (
-          <div className="rounded-[1.5rem] border border-stone-200 bg-white/80 px-4 py-5 text-sm leading-6 text-stone-700">
-            最新のランキングを読み込んでいます...
-          </div>
-        ) : null}
+      {isLoading ? (
+        <Card>
+          <CardContent className="pt-6 text-sm leading-6 text-muted-foreground">
+            保存済みの参加情報を読み込み中です。画面をそのまま開いたままでお待ちください。
+          </CardContent>
+        </Card>
+      ) : null}
 
-        {rankingError ? (
-          <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-4 text-sm leading-6 text-rose-800">
-            {rankingError}
-          </div>
-        ) : null}
+      {!isLoading && !state ? (
+        <Card>
+          <CardContent className="pt-6 text-sm leading-6 text-muted-foreground">
+            セッションが見つからないため、参加登録画面へ戻ります。
+          </CardContent>
+        </Card>
+      ) : null}
 
-        {!isRankingLoading && !rankingError && entries.length === 0 ? (
-          <div className="rounded-[1.5rem] border border-stone-200 bg-white/80 px-4 py-5 text-sm leading-6 text-stone-700">
-            まだランキング対象の参加者がいません。参加者がそろうとここに順位が表示されます。
-          </div>
-        ) : null}
+      {state ? (
+        <>
+          {isRankingLoading ? (
+            <Card>
+              <CardContent className="pt-6 text-sm leading-6 text-muted-foreground">
+                最新のランキングを読み込んでいます...
+              </CardContent>
+            </Card>
+          ) : null}
 
-        {!isRankingLoading && !rankingError && entries.length > 0 ? (
-          <RankingList entries={entries} highlightParticipantId={state.participantId} />
-        ) : null}
-      </div>
-    </ParticipantShell>
+          {rankingError ? (
+            <Alert variant="destructive">
+              <AlertDescription>{rankingError}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          {!isRankingLoading && !rankingError && entries.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6 text-sm leading-6 text-muted-foreground">
+                まだランキング対象の参加者がいません。参加者がそろうとここに順位が表示されます。
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {!isRankingLoading && !rankingError && entries.length > 0 ? (
+            <ParticipantRankingList
+              entries={entries}
+              highlightParticipantId={state.participantId}
+            />
+          ) : null}
+        </>
+      ) : null}
+    </main>
   );
 }
