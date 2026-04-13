@@ -61,23 +61,23 @@ const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
 const matchStatusConfig: Record<MatchStatus, { label: string; className: string }> = {
   reserved: {
     label: "案内中",
-    className: "border-lime-300/40 bg-lime-300/12 text-lime-50",
+    className: "border-primary/20 bg-primary/10 text-primary",
   },
   awaiting_ready: {
     label: "開始待ち",
-    className: "border-amber-300/40 bg-amber-300/12 text-amber-50",
+    className: "border-secondary/30 bg-secondary/20 text-secondary-foreground",
   },
   in_progress: {
     label: "対戦中",
-    className: "border-sky-300/40 bg-sky-300/12 text-sky-50",
+    className: "border-accent/30 bg-accent/20 text-accent-foreground",
   },
   winner_claimed: {
     label: "勝利申告中",
-    className: "border-fuchsia-300/40 bg-fuchsia-300/12 text-fuchsia-50",
+    className: "border-accent/30 bg-accent/20 text-accent-foreground",
   },
   completed: {
     label: "完了",
-    className: "border-emerald-300/40 bg-emerald-300/12 text-emerald-50",
+    className: "border-primary/20 bg-primary/10 text-primary",
   },
   cancelled_before_start: {
     label: "開始前取消",
@@ -85,11 +85,11 @@ const matchStatusConfig: Record<MatchStatus, { label: string; className: string 
   },
   voided_by_admin: {
     label: "運営無効化",
-    className: "border-rose-300/40 bg-rose-300/12 text-rose-50",
+    className: "border-destructive/20 bg-destructive/10 text-destructive",
   },
   force_finished_by_admin: {
     label: "運営確定",
-    className: "border-cyan-300/40 bg-cyan-300/12 text-cyan-50",
+    className: "border-accent/30 bg-accent/20 text-accent-foreground",
   },
 };
 
@@ -273,41 +273,41 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
 
   return (
     <>
-      <section className="rounded-[1.8rem] border border-white/10 bg-white/[0.045] p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.95)] backdrop-blur-md">
+      <section className="rounded-[1.8rem] border border-border bg-card p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.95)] ">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-400 uppercase">
+            <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
               Match Recovery
             </p>
-            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-white">Matches</h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-300">
+            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">Matches</h2>
+            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
               試合の無効化と運営勝敗確定を一覧から直接実行できます。トラブル時は対象卓、
               現在状態、対戦者を確認してから復旧してください。
             </p>
           </div>
-          <div className="flex items-center gap-3 self-start rounded-[1.2rem] border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-slate-300">
+          <div className="flex items-center gap-3 self-start rounded-[1.2rem] border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
             <RefreshCw className={cn("size-4", isRefreshing ? "animate-spin" : "")} />
             <span>{isRefreshing ? "同期中" : "Realtime 監視中"}</span>
           </div>
         </div>
 
         {refreshError ? (
-          <Alert className="mt-4 border-rose-300/30 bg-rose-300/10 text-rose-50">
+          <Alert className="mt-4 border-destructive/20 bg-destructive/10 text-destructive">
             <AlertTriangle className="size-4" />
             <AlertDescription>{refreshError}</AlertDescription>
           </Alert>
         ) : null}
 
-        <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-white/10 bg-slate-950/35">
+        <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="px-4 text-slate-300">卓</TableHead>
-                <TableHead className="px-4 text-slate-300">状態</TableHead>
-                <TableHead className="px-4 text-slate-300">対戦者</TableHead>
-                <TableHead className="px-4 text-slate-300">開始時刻</TableHead>
-                <TableHead className="px-4 text-slate-300">Dispute</TableHead>
-                <TableHead className="px-4 text-right text-slate-300">操作</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="px-4 text-muted-foreground">卓</TableHead>
+                <TableHead className="px-4 text-muted-foreground">状態</TableHead>
+                <TableHead className="px-4 text-muted-foreground">対戦者</TableHead>
+                <TableHead className="px-4 text-muted-foreground">開始時刻</TableHead>
+                <TableHead className="px-4 text-muted-foreground">Dispute</TableHead>
+                <TableHead className="px-4 text-right text-muted-foreground">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -322,33 +322,33 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
                   match.status === "winner_claimed";
 
                 return (
-                  <TableRow key={match.matchId} className="border-white/10 hover:bg-white/[0.03]">
+                  <TableRow key={match.matchId} className="border-border hover:bg-card">
                     <TableCell className="px-4 py-4 align-top">
                       <div className="space-y-1">
-                        <p className="font-semibold text-white">
+                        <p className="font-semibold text-foreground">
                           {match.tableNumber ? `卓 ${match.tableNumber}` : "卓未割当"}
                         </p>
-                        <p className="text-xs text-slate-400">{match.matchId}</p>
+                        <p className="text-xs text-muted-foreground">{match.matchId}</p>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-4 align-top">
                       <MatchStatusBadge status={match.status} />
                     </TableCell>
-                    <TableCell className="px-4 py-4 align-top text-slate-200">
+                    <TableCell className="px-4 py-4 align-top text-muted-foreground">
                       <div className="space-y-1">
                         <p>{match.participant1Nickname}</p>
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-muted-foreground">
                           vs {match.participant2Nickname ?? "運営スタッフ"}
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-4 align-top text-slate-300">
+                    <TableCell className="px-4 py-4 align-top text-muted-foreground">
                       {formatDateTime(match.startedAt)}
                     </TableCell>
-                    <TableCell className="px-4 py-4 align-top text-slate-300">
+                    <TableCell className="px-4 py-4 align-top text-muted-foreground">
                       <Badge
                         variant="outline"
-                        className="border-white/15 bg-white/5 text-slate-100"
+                        className="border-border bg-card text-slate-100"
                       >
                         {match.disputeCount}
                       </Badge>
@@ -392,9 +392,9 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
       </section>
 
       <AlertDialog open={actionState !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <AlertDialogContent className="border-white/10 bg-slate-950 text-white" size="default">
+        <AlertDialogContent className="border-border bg-slate-950 text-foreground" size="default">
           <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogMedia className="bg-white/10 text-white">
+            <AlertDialogMedia className="bg-card text-foreground">
               {actionState?.type === "winner" ? (
                 <Crown className="size-5" />
               ) : (
@@ -404,33 +404,33 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
             <AlertDialogTitle>
               {actionState?.type === "winner" ? "運営で勝敗確定" : "試合無効を確認"}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-left text-slate-300">
+            <AlertDialogDescription className="text-left text-muted-foreground">
               現在状態と復旧対象を確認し、最後の確認ボタンを押した時だけ操作が実行されます。
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           {selectedMatch ? (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-lg font-semibold text-white">
+                    <p className="text-lg font-semibold text-foreground">
                       {selectedMatch.tableNumber ? `卓 ${selectedMatch.tableNumber}` : "卓未割当"}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">{selectedMatch.matchId}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{selectedMatch.matchId}</p>
                   </div>
                   <MatchStatusBadge status={selectedMatch.status} />
                 </div>
-                <div className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Players</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Players</p>
                     <p className="mt-1">
                       {selectedMatch.participant1Nickname} /{" "}
                       {selectedMatch.participant2Nickname ?? "運営スタッフ"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Recovery</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Recovery</p>
                     <p className="mt-1">
                       {actionState?.type === "winner"
                         ? "勝者を確定し、結果確定状態へ進めます。"
@@ -442,37 +442,37 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
 
               {actionState?.type === "winner" ? (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-slate-200">勝者を選択</p>
+                  <p className="text-sm font-medium text-muted-foreground">勝者を選択</p>
                   <RadioGroup
                     aria-label="勝者選択"
                     value={winnerParticipantId ?? ""}
                     onValueChange={(value) => setWinnerParticipantId(value)}
                   >
-                    <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                    <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
                       <RadioGroupItem
                         aria-label={selectedMatch.participant1Nickname}
                         value={selectedMatch.participant1Id}
                       />
                       <span className="space-y-1">
-                        <span className="block text-sm font-medium text-white">
+                        <span className="block text-sm font-medium text-foreground">
                           {selectedMatch.participant1Nickname}
                         </span>
-                        <span className="block text-sm text-slate-300">
+                        <span className="block text-sm text-muted-foreground">
                           この参加者を勝者として運営確定します。
                         </span>
                       </span>
                     </div>
                     {selectedMatch.participant2Id ? (
-                      <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
                         <RadioGroupItem
                           aria-label={selectedMatch.participant2Nickname ?? "参加者2"}
                           value={selectedMatch.participant2Id}
                         />
                         <span className="space-y-1">
-                          <span className="block text-sm font-medium text-white">
+                          <span className="block text-sm font-medium text-foreground">
                             {selectedMatch.participant2Nickname ?? "参加者2"}
                           </span>
-                          <span className="block text-sm text-slate-300">
+                          <span className="block text-sm text-muted-foreground">
                             この参加者を勝者として運営確定します。
                           </span>
                         </span>
@@ -481,7 +481,7 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
                   </RadioGroup>
                 </div>
               ) : (
-                <Alert className="border-amber-300/25 bg-amber-300/10 text-amber-50">
+                <Alert className="border-secondary/30 bg-secondary/20 text-secondary-foreground">
                   <AlertTriangle className="size-4" />
                   <AlertDescription>
                     試合を無効化すると、関連参加者は registered に戻り、卓も available
@@ -491,7 +491,7 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
               )}
 
               {actionError ? (
-                <Alert className="border-rose-300/25 bg-rose-300/10 text-rose-50">
+                <Alert className="border-destructive/20 bg-destructive/10 text-destructive">
                   <AlertTriangle className="size-4" />
                   <AlertDescription>{actionError}</AlertDescription>
                 </Alert>
@@ -499,7 +499,7 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
             </div>
           ) : null}
 
-          <AlertDialogFooter className="border-white/10 bg-white/[0.02]">
+          <AlertDialogFooter className="border-border bg-card">
             <AlertDialogCancel
               variant="outline"
               disabled={Boolean(submittingMatchId)}

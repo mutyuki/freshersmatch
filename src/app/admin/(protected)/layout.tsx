@@ -14,7 +14,7 @@ export default async function AdminLayout(
   }
 
   return (
-    <div className="min-h-screen bg-background px-6 py-6 text-foreground lg:px-10 lg:py-8">
+    <div className="min-h-screen bg-muted px-6 py-6 text-foreground lg:px-10 lg:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-7xl flex-col gap-6">
         <header className="rounded-2xl border bg-card px-7 py-7 shadow-sm">
           <div className="flex flex-col gap-6">

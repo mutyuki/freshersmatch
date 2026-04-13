@@ -83,11 +83,11 @@ function formatChipBalance(value: number): string {
 function getRowTone(status: AdminParticipantListItem["status"]): string {
   switch (status) {
     case "paused":
-      return "bg-amber-300/[0.08]";
+      return "bg-secondary";
     case "disqualified":
-      return "bg-rose-300/[0.08]";
+      return "bg-destructive/10";
     case "disconnected":
-      return "bg-slate-300/[0.08]";
+      return "bg-muted";
     default:
       return "";
   }
@@ -316,42 +316,42 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
 
   return (
     <>
-      <section className="rounded-[1.8rem] border border-white/10 bg-white/[0.045] p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.95)] backdrop-blur-md">
+      <section className="rounded-[1.8rem] border border-border bg-card p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.95)] ">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-400 uppercase">
+            <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
               Participant Operations
             </p>
-            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-white">Participants</h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-300">
+            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">Participants</h2>
+            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
               現在状態を見ながら、チップ修正・一時停止・一時停止解除・失格を安全に実行できます。
               破壊的な変更は確認ダイアログで対象者と副作用を必ず確認してください。
             </p>
           </div>
-          <div className="flex items-center gap-3 self-start rounded-[1.2rem] border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-slate-300">
+          <div className="flex items-center gap-3 self-start rounded-[1.2rem] border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
             <RefreshCw className={cn("size-4", isRefreshing ? "animate-spin" : "")} />
             <span>{isRefreshing ? "同期中" : "Realtime 監視中"}</span>
           </div>
         </div>
 
         {refreshError ? (
-          <Alert className="mt-4 border-rose-300/30 bg-rose-300/10 text-rose-50">
+          <Alert className="mt-4 border-destructive/20 bg-destructive/10 text-destructive">
             <AlertTriangle className="size-4" />
             <AlertDescription>{refreshError}</AlertDescription>
           </Alert>
         ) : null}
 
-        <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-white/10 bg-slate-950/35">
+        <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="px-4 text-slate-300">参加者</TableHead>
-                <TableHead className="px-4 text-slate-300">状態</TableHead>
-                <TableHead className="px-4 text-slate-300">残高</TableHead>
-                <TableHead className="px-4 text-slate-300">現在試合</TableHead>
-                <TableHead className="px-4 text-slate-300">最終通信</TableHead>
-                <TableHead className="px-4 text-slate-300">失格理由</TableHead>
-                <TableHead className="px-4 text-right text-slate-300">操作</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="px-4 text-muted-foreground">参加者</TableHead>
+                <TableHead className="px-4 text-muted-foreground">状態</TableHead>
+                <TableHead className="px-4 text-muted-foreground">残高</TableHead>
+                <TableHead className="px-4 text-muted-foreground">現在試合</TableHead>
+                <TableHead className="px-4 text-muted-foreground">最終通信</TableHead>
+                <TableHead className="px-4 text-muted-foreground">失格理由</TableHead>
+                <TableHead className="px-4 text-right text-muted-foreground">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -365,43 +365,43 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                   <TableRow
                     key={participant.participantId}
                     className={cn(
-                      "border-white/10 hover:bg-white/[0.03]",
+                      "border-border hover:bg-card",
                       getRowTone(participant.status),
                     )}
                   >
                     <TableCell className="px-4 py-4 align-top">
                       <div className="space-y-1">
-                        <p className="font-semibold text-white">{participant.nickname}</p>
-                        <p className="text-xs text-slate-400">{participant.participantId}</p>
+                        <p className="font-semibold text-foreground">{participant.nickname}</p>
+                        <p className="text-xs text-muted-foreground">{participant.participantId}</p>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-4 align-top">
                       <StatusBadge status={participant.status} />
                     </TableCell>
                     <TableCell className="px-4 py-4 align-top">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm font-semibold text-cyan-50">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/20 px-3 py-1 text-sm font-semibold text-accent-foreground">
                         <Coins className="size-3.5" />
                         {formatChipBalance(participant.chipBalance)}
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-4 align-top text-slate-200">
+                    <TableCell className="px-4 py-4 align-top text-muted-foreground">
                       {participant.currentMatchId ? (
                         <Badge
                           variant="outline"
-                          className="border-white/15 bg-white/5 text-slate-100"
+                          className="border-border bg-card text-slate-100"
                         >
                           {participant.currentMatchId}
                         </Badge>
                       ) : (
-                        <span className="text-slate-500">なし</span>
+                        <span className="text-muted-foreground">なし</span>
                       )}
                     </TableCell>
-                    <TableCell className="px-4 py-4 align-top text-slate-300">
+                    <TableCell className="px-4 py-4 align-top text-muted-foreground">
                       {formatDateTime(participant.lastSeenAt)}
                     </TableCell>
-                    <TableCell className="px-4 py-4 align-top text-slate-300">
+                    <TableCell className="px-4 py-4 align-top text-muted-foreground">
                       {participant.disqualifiedReason ?? (
-                        <span className="text-slate-500">なし</span>
+                        <span className="text-muted-foreground">なし</span>
                       )}
                     </TableCell>
                     <TableCell className="px-4 py-4 align-top">
@@ -469,9 +469,9 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
       </section>
 
       <AlertDialog open={actionState !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <AlertDialogContent className="border-white/10 bg-slate-950 text-white" size="default">
+        <AlertDialogContent className="border-border bg-slate-950 text-foreground" size="default">
           <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogMedia className="bg-white/10 text-white">
+            <AlertDialogMedia className="bg-card text-foreground">
               {actionState?.type === "chip-adjust" ? (
                 <Coins className="size-5" />
               ) : actionState?.type === "unpause" ? (
@@ -491,34 +491,34 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                     ? "一時停止解除を確認"
                     : "失格処理を確認"}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-left text-slate-300">
+            <AlertDialogDescription className="text-left text-muted-foreground">
               対象者と現在状態を確認し、最後の確認ボタンを押した時だけ操作が実行されます。
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           {selectedParticipant ? (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-lg font-semibold text-white">
+                    <p className="text-lg font-semibold text-foreground">
                       {selectedParticipant.nickname}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {selectedParticipant.participantId}
                     </p>
                   </div>
                   <StatusBadge status={selectedParticipant.status} />
                 </div>
-                <div className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                       Current match
                     </p>
                     <p className="mt-1">{selectedParticipant.currentMatchId ?? "なし"}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                       Chip balance
                     </p>
                     <p className="mt-1">{formatChipBalance(selectedParticipant.chipBalance)}</p>
@@ -529,7 +529,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
               {actionState?.type === "chip-adjust" ? (
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <span className="text-sm font-medium text-slate-200">増減値</span>
+                    <span className="text-sm font-medium text-muted-foreground">増減値</span>
                     <Input
                       aria-label="チップ修正量"
                       type="number"
@@ -539,7 +539,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                     />
                   </div>
                   <div className="space-y-2">
-                    <span className="text-sm font-medium text-slate-200">理由</span>
+                    <span className="text-sm font-medium text-muted-foreground">理由</span>
                     <Textarea
                       aria-label="チップ修正理由"
                       placeholder="例: 現物チップとの差分調整"
@@ -551,7 +551,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
               ) : null}
 
               {actionState?.type === "pause" ? (
-                <Alert className="border-amber-300/25 bg-amber-300/10 text-amber-50">
+                <Alert className="border-secondary/30 bg-secondary/20 text-secondary-foreground">
                   <AlertTriangle className="size-4" />
                   <AlertDescription>
                     queueing 中なら待機列から外れます。対戦中なら現在試合が無効化され、相手は
@@ -561,7 +561,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
               ) : null}
 
               {actionState?.type === "unpause" ? (
-                <Alert className="border-emerald-300/25 bg-emerald-300/10 text-emerald-50">
+                <Alert className="border-primary/20 bg-primary/10 text-primary">
                   <PlayCircle className="size-4" />
                   <AlertDescription>
                     一時停止解除後は registered に戻ります。自動で queueing には戻りません。
@@ -572,7 +572,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
               {actionState?.type === "disqualify" ? (
                 <div className="space-y-4">
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-slate-200">対戦中失格モード</p>
+                    <p className="text-sm font-medium text-muted-foreground">対戦中失格モード</p>
                     <RadioGroup
                       aria-label="失格モード"
                       value={disqualifyMode}
@@ -580,27 +580,27 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                         setDisqualifyMode(value as "void_current_match" | "lose_current_match")
                       }
                     >
-                      <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
                         <RadioGroupItem aria-label="試合を無効化する" value="void_current_match" />
                         <span className="space-y-1">
-                          <span className="block text-sm font-medium text-white">
+                          <span className="block text-sm font-medium text-foreground">
                             試合を無効化する
                           </span>
-                          <span className="block text-sm text-slate-300">
+                          <span className="block text-sm text-muted-foreground">
                             現在試合を無効にして、相手を registered に戻します。
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
                         <RadioGroupItem
                           aria-label="敗北扱いで結果確定する"
                           value="lose_current_match"
                         />
                         <span className="space-y-1">
-                          <span className="block text-sm font-medium text-white">
+                          <span className="block text-sm font-medium text-foreground">
                             敗北扱いで結果確定する
                           </span>
-                          <span className="block text-sm text-slate-300">
+                          <span className="block text-sm text-muted-foreground">
                             対象を敗北扱いにし、相手を勝者確定します。
                           </span>
                         </span>
@@ -608,7 +608,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                     </RadioGroup>
                   </div>
                   <div className="space-y-2">
-                    <span className="text-sm font-medium text-slate-200">失格理由</span>
+                    <span className="text-sm font-medium text-muted-foreground">失格理由</span>
                     <Textarea
                       aria-label="失格理由"
                       placeholder="例: ルール違反のため"
@@ -620,7 +620,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
               ) : null}
 
               {actionError ? (
-                <Alert className="border-rose-300/25 bg-rose-300/10 text-rose-50">
+                <Alert className="border-destructive/20 bg-destructive/10 text-destructive">
                   <AlertTriangle className="size-4" />
                   <AlertDescription>{actionError}</AlertDescription>
                 </Alert>
@@ -628,7 +628,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
             </div>
           ) : null}
 
-          <AlertDialogFooter className="border-white/10 bg-white/[0.02]">
+          <AlertDialogFooter className="border-border bg-card">
             <AlertDialogCancel
               variant="outline"
               disabled={Boolean(submittingParticipantId)}

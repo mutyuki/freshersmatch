@@ -188,21 +188,21 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.35rem] border border-white/10 bg-slate-950/30 px-4 py-4">
+      <section className="rounded-[1.35rem] border border-border bg-card px-4 py-4">
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-white">待機者から運営戦を開始</h3>
-          <p className="text-sm leading-6 text-slate-300">
+          <h3 className="text-sm font-semibold text-foreground">待機者から運営戦を開始</h3>
+          <p className="text-sm leading-6 text-muted-foreground">
             待機中 participant と空き卓を使って、差し替え不可の運営戦を確定します。
           </p>
         </div>
 
         <div className="mt-4 space-y-4">
           <label className="block">
-            <span className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
+            <span className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
               対象参加者
             </span>
             <select
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white"
+              className="mt-2 w-full rounded-2xl border border-border bg-card px-3 py-3 text-sm text-foreground"
               disabled={props.data.queueingParticipants.length === 0 || isSubmittingStart}
               onChange={(event) => setSelectedParticipantId(event.target.value)}
               value={selectedParticipantId}
@@ -222,11 +222,11 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
           </label>
 
           <label className="block">
-            <span className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
+            <span className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
               使用卓
             </span>
             <select
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white"
+              className="mt-2 w-full rounded-2xl border border-border bg-card px-3 py-3 text-sm text-foreground"
               disabled={availableTables.length === 0 || isSubmittingStart}
               onChange={(event) => setSelectedTableId(event.target.value)}
               value={selectedTableId}
@@ -241,7 +241,7 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
           </label>
 
           {selectedParticipant ? (
-            <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] px-4 py-3 text-sm text-amber-50">
+            <div className="rounded-2xl border border-secondary/30 bg-secondary px-4 py-3 text-sm text-secondary-foreground">
               <p className="font-medium">{selectedParticipant.nickname}</p>
               <p className="mt-1">
                 {selectedParticipant.isStaffMatchCandidate
@@ -252,7 +252,7 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
           ) : null}
 
           <button
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-accent/30 bg-accent/20 px-4 py-3 text-sm font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!selectedParticipant || isSubmittingStart}
             onClick={() => {
               void handleStartStaffMatch();
@@ -266,33 +266,33 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
 
       <section className="space-y-3">
         <div>
-          <h3 className="text-sm font-semibold text-white">進行中の運営戦を結果確定</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
+          <h3 className="text-sm font-semibold text-foreground">進行中の運営戦を結果確定</h3>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
             運営戦は参加者の勝利申告を使わず、ここから直接結果を確定します。
           </p>
         </div>
 
         {staffMatches.length === 0 ? (
-          <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/30 px-4 py-6 text-sm text-slate-300">
+          <div className="rounded-[1.35rem] border border-border bg-card px-4 py-6 text-sm text-muted-foreground">
             現在、結果確定待ちの運営戦はありません。
           </div>
         ) : (
           staffMatches.map((match) => (
             <article
               key={match.matchId}
-              className="rounded-[1.35rem] border border-white/10 bg-slate-950/30 px-4 py-4"
+              className="rounded-[1.35rem] border border-border bg-card px-4 py-4"
             >
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">{match.participant1Nickname}</p>
-                  <p className="mt-2 text-sm text-slate-300">
+                  <p className="text-sm font-semibold text-foreground">{match.participant1Nickname}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
                     {match.tableNumber ? `${match.tableNumber} 卓` : "卓未割当"} /{" "}
                     {match.displayStatus === "winner_claimed" ? "運営確定待ち" : "対戦中"}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <button
-                    className="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-2xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isResolvingMatchId === match.matchId}
                     onClick={() => {
                       void handleResolveStaffMatch({
@@ -307,7 +307,7 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
                     参加者勝利で確定
                   </button>
                   <button
-                    className="rounded-2xl border border-rose-300/30 bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-2 text-sm font-semibold text-destructive disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isResolvingMatchId === match.matchId}
                     onClick={() => {
                       void handleResolveStaffMatch({
@@ -329,13 +329,13 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
       </section>
 
       {errorMessage ? (
-        <div className="rounded-2xl border border-rose-300/30 bg-rose-300/[0.08] px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-2xl border border-emerald-300/30 bg-emerald-300/[0.08] px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-2xl border border-primary/20 bg-emerald-300/[0.08] px-4 py-3 text-sm text-primary">
           {successMessage}
         </div>
       ) : null}

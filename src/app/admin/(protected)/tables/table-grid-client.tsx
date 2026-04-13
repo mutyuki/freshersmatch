@@ -49,19 +49,19 @@ type ActionState =
 const tableStatusConfig: Record<TableStatus, { label: string; className: string }> = {
   available: {
     label: "Available",
-    className: "border-emerald-300/40 bg-emerald-300/12 text-emerald-50",
+    className: "border-primary/20 bg-primary/10 text-primary",
   },
   reserved: {
     label: "Reserved",
-    className: "border-amber-300/40 bg-amber-300/12 text-amber-50",
+    className: "border-secondary/30 bg-secondary/20 text-secondary-foreground",
   },
   in_use: {
     label: "In Use",
-    className: "border-sky-300/40 bg-sky-300/12 text-sky-50",
+    className: "border-accent/30 bg-accent/20 text-accent-foreground",
   },
   admin_hold: {
     label: "Admin Hold",
-    className: "border-violet-300/40 bg-violet-300/12 text-violet-50",
+    className: "border-accent/30 bg-accent/20 text-accent-foreground",
   },
 };
 
@@ -209,26 +209,26 @@ export function TableGrid(props: TableGridProps): JSX.Element {
 
   return (
     <>
-      <section className="rounded-[1.8rem] border border-white/10 bg-white/[0.045] p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.95)] backdrop-blur-md">
+      <section className="rounded-[1.8rem] border border-border bg-card p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.95)] ">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-400 uppercase">
+            <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
               Table Recovery
             </p>
-            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-white">Tables</h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-300">
+            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">Tables</h2>
+            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
               卓の強制解放と admin hold の切り替えを一覧から実行できます。対戦中の卓は先に match
               解決が必要なことが一目で分かるように表示します。
             </p>
           </div>
-          <div className="flex items-center gap-3 self-start rounded-[1.2rem] border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-slate-300">
+          <div className="flex items-center gap-3 self-start rounded-[1.2rem] border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
             <RefreshCw className={cn("size-4", isRefreshing ? "animate-spin" : "")} />
             <span>{isRefreshing ? "同期中" : "Realtime 監視中"}</span>
           </div>
         </div>
 
         {refreshError ? (
-          <Alert className="mt-4 border-rose-300/30 bg-rose-300/10 text-rose-50">
+          <Alert className="mt-4 border-destructive/20 bg-destructive/10 text-destructive">
             <AlertTriangle className="size-4" />
             <AlertDescription>{refreshError}</AlertDescription>
           </Alert>
@@ -247,29 +247,29 @@ export function TableGrid(props: TableGridProps): JSX.Element {
             return (
               <article
                 key={table.tableId}
-                className="rounded-[1.5rem] border border-white/10 bg-slate-950/35 p-5 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.95)]"
+                className="rounded-[1.5rem] border border-border bg-card p-5 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.95)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                    <p className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                       Table {table.tableNumber}
                     </p>
-                    <h3 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-white">
+                    <h3 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-foreground">
                       {table.gameTitle}
                     </h3>
                   </div>
                   <TableStatusBadge status={table.status} />
                 </div>
 
-                <div className="mt-5 space-y-3 text-sm text-slate-300">
+                <div className="mt-5 space-y-3 text-sm text-muted-foreground">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                       Current match
                     </p>
                     <p className="mt-1">{table.currentMatchId ?? "なし"}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Occupants</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Occupants</p>
                     <p className="mt-1">
                       {table.occupantNicknames.length > 0
                         ? table.occupantNicknames.join(" / ")
@@ -277,13 +277,13 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Held by</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Held by</p>
                     <p className="mt-1">{table.heldByAdminDisplayName ?? "未保持"}</p>
                   </div>
                 </div>
 
                 {table.status === "reserved" || table.status === "in_use" ? (
-                  <Alert className="mt-4 border-amber-300/25 bg-amber-300/10 text-amber-50">
+                  <Alert className="mt-4 border-secondary/30 bg-secondary/20 text-secondary-foreground">
                     <AlertTriangle className="size-4" />
                     <AlertDescription>
                       この卓は進行中です。強制解放すると関連 match を無効化して参加者を復旧します。
@@ -339,9 +339,9 @@ export function TableGrid(props: TableGridProps): JSX.Element {
       </section>
 
       <AlertDialog open={actionState !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <AlertDialogContent className="border-white/10 bg-slate-950 text-white" size="default">
+        <AlertDialogContent className="border-border bg-slate-950 text-foreground" size="default">
           <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogMedia className="bg-white/10 text-white">
+            <AlertDialogMedia className="bg-card text-foreground">
               {actionState?.type === "hold" ? (
                 <Lock className="size-5" />
               ) : actionState?.type === "release-hold" ? (
@@ -357,32 +357,32 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                   ? "卓の hold を解除する"
                   : "卓の強制解放を確認"}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-left text-slate-300">
+            <AlertDialogDescription className="text-left text-muted-foreground">
               対象卓と副作用を確認し、最後の確認ボタンを押した時だけ操作が実行されます。
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           {selectedTable ? (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-lg font-semibold text-white">
+                    <p className="text-lg font-semibold text-foreground">
                       卓 {selectedTable.tableNumber}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">{selectedTable.tableId}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{selectedTable.tableId}</p>
                   </div>
                   <TableStatusBadge status={selectedTable.status} />
                 </div>
-                <div className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                       Current match
                     </p>
                     <p className="mt-1">{selectedTable.currentMatchId ?? "なし"}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Occupants</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Occupants</p>
                     <p className="mt-1">
                       {selectedTable.occupantNicknames.length > 0
                         ? selectedTable.occupantNicknames.join(" / ")
@@ -393,7 +393,7 @@ export function TableGrid(props: TableGridProps): JSX.Element {
               </div>
 
               {actionState?.type === "force-release" ? (
-                <Alert className="border-amber-300/25 bg-amber-300/10 text-amber-50">
+                <Alert className="border-secondary/30 bg-secondary/20 text-secondary-foreground">
                   <AlertTriangle className="size-4" />
                   <AlertDescription>
                     この操作は卓を available に戻し、紐づく active match があれば無効化して参加者を
@@ -401,14 +401,14 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                   </AlertDescription>
                 </Alert>
               ) : actionState?.type === "hold" ? (
-                <Alert className="border-violet-300/25 bg-violet-300/10 text-violet-50">
+                <Alert className="border-accent/30 bg-accent/20 text-accent-foreground">
                   <Lock className="size-4" />
                   <AlertDescription>
                     admin hold にした卓は新規マッチング対象から外れます。空き卓でのみ実行できます。
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert className="border-emerald-300/25 bg-emerald-300/10 text-emerald-50">
+                <Alert className="border-primary/20 bg-primary/10 text-primary">
                   <Unlock className="size-4" />
                   <AlertDescription>
                     hold 解除後は available に戻り、再びマッチング対象になります。
@@ -417,7 +417,7 @@ export function TableGrid(props: TableGridProps): JSX.Element {
               )}
 
               {actionError ? (
-                <Alert className="border-rose-300/25 bg-rose-300/10 text-rose-50">
+                <Alert className="border-destructive/20 bg-destructive/10 text-destructive">
                   <AlertTriangle className="size-4" />
                   <AlertDescription>{actionError}</AlertDescription>
                 </Alert>
@@ -425,7 +425,7 @@ export function TableGrid(props: TableGridProps): JSX.Element {
             </div>
           ) : null}
 
-          <AlertDialogFooter className="border-white/10 bg-white/[0.02]">
+          <AlertDialogFooter className="border-border bg-card">
             <AlertDialogCancel
               variant="outline"
               disabled={Boolean(submittingTableId)}
