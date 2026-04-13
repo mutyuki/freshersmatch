@@ -1,3 +1,5 @@
+import type { RealtimeChannel } from "@supabase/supabase-js";
+
 import { getSupabaseAdminClient } from "@/lib/db/server";
 import {
   getChannelName,
@@ -5,6 +7,23 @@ import {
   type RealtimeInvalidationPayload,
   type RealtimeScope,
 } from "@/lib/realtime/channels";
+
+type RealtimeSubscribeStatus = "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR";
+
+async function subscribeChannel(channel: RealtimeChannel): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    channel.subscribe((status: RealtimeSubscribeStatus, error?: Error) => {
+      if (status === "SUBSCRIBED") {
+        resolve();
+        return;
+      }
+
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        reject(error ?? new Error(`Realtime channel subscribe failed: ${status}`));
+      }
+    });
+  });
+}
 
 export async function publishInvalidation(params: {
   eventId: string;
@@ -27,6 +46,8 @@ export async function publishInvalidation(params: {
     };
 
     try {
+      await subscribeChannel(channel);
+
       const result = await channel.send({
         type: "broadcast",
         event: payload.eventType,

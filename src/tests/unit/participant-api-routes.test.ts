@@ -139,6 +139,13 @@ describe("participant api routes", () => {
     expect(restoreParticipantSession).toHaveBeenCalledWith({
       sessionToken: "session-token",
     });
+    expect(publishInvalidation).toHaveBeenCalledWith({
+      eventId: "event-1",
+      scopes: ["participant", "match", "admin"],
+      participantIds: ["participant-1"],
+      matchId: "match-1",
+      tableId: null,
+    });
   });
 
   it("touches the participant session before loading runtime state", async () => {

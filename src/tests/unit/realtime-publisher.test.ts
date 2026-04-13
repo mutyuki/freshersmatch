@@ -17,9 +17,13 @@ describe("publishInvalidation", () => {
   });
 
   it("publishes one broadcast per scope with the scoped event type", async () => {
+    const subscribe = vi.fn((callback: (status: "SUBSCRIBED") => void) => {
+      callback("SUBSCRIBED");
+    });
     const send = vi.fn().mockResolvedValueOnce("ok").mockResolvedValueOnce("ok");
     const removeChannel = vi.fn().mockResolvedValue(undefined);
     const channel = vi.fn(() => ({
+      subscribe,
       send,
     }));
 
@@ -54,6 +58,7 @@ describe("publishInvalidation", () => {
         eventId: "event-1",
       }),
     });
+    expect(subscribe).toHaveBeenCalledTimes(2);
     expect(removeChannel).toHaveBeenCalledTimes(2);
   });
 
@@ -63,7 +68,35 @@ describe("publishInvalidation", () => {
 
     getSupabaseAdminClient.mockReturnValue({
       channel: vi.fn(() => ({
+        subscribe: vi.fn((callback: (status: "SUBSCRIBED") => void) => {
+          callback("SUBSCRIBED");
+        }),
         send: vi.fn().mockRejectedValue(new Error("socket down")),
+      })),
+      removeChannel,
+    });
+
+    await expect(
+      publishInvalidation({
+        eventId: "event-1",
+        scopes: ["participant"],
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(errorSpy).toHaveBeenCalled();
+    expect(removeChannel).toHaveBeenCalledTimes(1);
+  });
+
+  it("swallows subscribe failures so mutation callers do not fail", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const removeChannel = vi.fn().mockResolvedValue(undefined);
+
+    getSupabaseAdminClient.mockReturnValue({
+      channel: vi.fn(() => ({
+        subscribe: vi.fn((callback: (status: "CHANNEL_ERROR", error?: Error) => void) => {
+          callback("CHANNEL_ERROR", new Error("subscribe failed"));
+        }),
+        send: vi.fn(),
       })),
       removeChannel,
     });
