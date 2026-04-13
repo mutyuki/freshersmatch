@@ -19,7 +19,9 @@ export async function POST(request: Request): Promise<Response> {
 
     await publishInvalidation({
       eventId: runtime.eventId,
-      scopes: ["participant", "admin", "ranking"],
+      scopes: input.approve
+        ? ["participant", "match", "admin", "ranking"]
+        : ["participant", "match", "admin"],
       participantIds: [participantId],
       matchId: input.matchId,
     });

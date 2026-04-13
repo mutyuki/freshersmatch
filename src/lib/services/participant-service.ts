@@ -339,10 +339,17 @@ export async function restoreParticipantSession(params: {
 export async function getParticipantRuntimeState(
   participantId: string,
 ): Promise<ParticipantRuntimeState> {
-  await normalizeParticipantConnectionState({
-    participantId,
-    now: new Date(),
-  });
+  const participantBeforeNormalization = await fetchParticipantById(participantId);
+
+  if (participantBeforeNormalization.status === "disconnected") {
+    await restoreDisconnectedParticipantIfNeeded({ participantId });
+  } else {
+    await normalizeParticipantConnectionState({
+      participantId,
+      now: new Date(),
+    });
+  }
+
   const participant = await fetchParticipantById(participantId);
   return buildParticipantRuntimeState(participant);
 }

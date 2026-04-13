@@ -19,6 +19,8 @@ type RuntimeResponse = {
   };
 };
 
+const DISCONNECTED_REFRESH_INTERVAL_MS = 5_000;
+
 function isCurrentRouteCompatible(pathname: string, preferredRoute: "/home" | "/match"): boolean {
   if (pathname === preferredRoute) {
     return true;
@@ -146,6 +148,20 @@ export function useParticipantRuntime(): {
       await loadRuntime("refresh");
     },
   });
+
+  useEffect(() => {
+    if (isLoading || state?.status !== "disconnected") {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void loadRuntime("refresh");
+    }, DISCONNECTED_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isLoading, loadRuntime, state?.status]);
 
   useEffect(() => {
     if (isLoading) {

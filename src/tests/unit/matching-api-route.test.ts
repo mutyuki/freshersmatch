@@ -591,7 +591,7 @@ describe("matching api routes", () => {
     });
     expect(publishInvalidation).toHaveBeenCalledWith({
       eventId: "event-1",
-      scopes: ["participant", "admin", "ranking"],
+      scopes: ["participant", "match", "admin", "ranking"],
       participantIds: ["participant-1"],
       matchId: "match-1",
     });

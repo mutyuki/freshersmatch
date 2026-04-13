@@ -387,6 +387,52 @@ describe("participant service", () => {
     });
   });
 
+  it("restores disconnected participants when runtime is refreshed without a full reload", async () => {
+    participantsMaybeSingle
+      .mockResolvedValueOnce({
+        data: {
+          ...baseParticipant,
+          status: "disconnected",
+          last_non_disconnect_status: "playing",
+        },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: {
+          ...baseParticipant,
+          status: "playing",
+          last_non_disconnect_status: "playing",
+          current_match_id: "match-1",
+        },
+        error: null,
+      });
+    matchesMaybeSingle.mockResolvedValue({
+      data: normalMatch,
+      error: null,
+    });
+    tablesMaybeSingle.mockResolvedValue({
+      data: table,
+      error: null,
+    });
+    mockParticipantLookup({
+      "participant-2": {
+        ...baseParticipant,
+        id: "participant-2",
+        nickname: "Bob",
+      },
+    });
+
+    await expect(getParticipantRuntimeState("participant-1")).resolves.toMatchObject({
+      status: "playing",
+      currentMatchId: "match-1",
+    });
+
+    expect(restoreDisconnectedParticipantIfNeeded).toHaveBeenCalledWith({
+      participantId: "participant-1",
+    });
+    expect(normalizeParticipantConnectionState).not.toHaveBeenCalled();
+  });
+
   it("reconstructs a normal match runtime with opponent, table, and opponentReady", async () => {
     mockParticipantLookup({
       "participant-1": {

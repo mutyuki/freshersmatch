@@ -370,4 +370,60 @@ describe("useParticipantRuntime", () => {
 
     expect(replace).not.toHaveBeenCalled();
   });
+
+  it("keeps refreshing while disconnected and redirects once the runtime recovers", async () => {
+    vi.useFakeTimers();
+
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: createRuntime("disconnected", {
+              lastNonDisconnectStatus: "playing",
+            }),
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: createRuntime("playing"),
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      );
+
+    const { result } = renderHook(() => useParticipantRuntime());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(replace).toHaveBeenCalledWith("/match");
+
+    replace.mockClear();
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000);
+      await Promise.resolve();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.current.state?.status).toBe("playing");
+    expect(replace).toHaveBeenCalledWith("/match");
+
+    vi.useRealTimers();
+  });
 });
