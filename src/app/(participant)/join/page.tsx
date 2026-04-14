@@ -115,9 +115,6 @@ export default function JoinPage(): JSX.Element {
       <Card>
         <CardHeader>
           <CardTitle>参加登録</CardTitle>
-          <CardDescription>
-            QR から開いたら、会場コードと呼ばれたい名前を入れるだけで参加できます。
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-5" onSubmit={handleSubmit}>
