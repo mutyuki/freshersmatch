@@ -148,9 +148,6 @@ export default function MatchPage(): JSX.Element {
     <main className="flex min-h-full flex-col gap-4">
       <header className="space-y-2 px-1 pb-2 pt-1">
         <div className="space-y-2">
-          <p className="text-sm leading-6 text-muted-foreground">
-            いま必要な情報だけを、片手で迷わず操作できる並びで表示します。
-          </p>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
         </div>
       </header>
@@ -178,9 +175,6 @@ export default function MatchPage(): JSX.Element {
               <CardHeader>
                 <StatusPill status="queueing" />
                 <CardTitle>次の卓を探しています</CardTitle>
-                <CardDescription>
-                  人対人を優先して、空いている卓へ順番に案内します。画面が切り替わったらそのまま卓へ向かってください。
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="rounded-lg border bg-muted/30 p-4">
@@ -188,11 +182,11 @@ export default function MatchPage(): JSX.Element {
                   <p className="mt-2 text-4xl font-semibold tracking-tight text-foreground">
                     {formatElapsedTime(elapsedSeconds)}
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {elapsedSeconds === null
-                      ? "待機開始時刻を確認しています。数秒たっても更新されない場合は近くのスタッフへ知らせてください。"
-                      : "最後に戦った相手は可能なら避けつつ、部屋の回転が止まらないようにマッチを探しています。"}
-                  </p>
+                  {elapsedSeconds === null ? (
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      待機開始時刻を確認しています。数秒たっても更新されない場合は近くのスタッフへ知らせてください。
+                    </p>
+                  ) : null}
                 </div>
                 <Button
                   type="button"
@@ -226,9 +220,6 @@ export default function MatchPage(): JSX.Element {
                     ? "相手の準備完了を待っています"
                     : "卓が確定しました。すぐ向かってください"}
                 </CardTitle>
-                <CardDescription>
-                  卓番号と相手を確認して、迷わずその卓へ向かってください。開始前の確認はこの画面にまとまっています。
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="rounded-lg border bg-muted/30 p-4">
@@ -313,10 +304,6 @@ export default function MatchPage(): JSX.Element {
             <Card>
               <CardHeader>
                 <StatusPill status="playing" />
-                <CardTitle>対戦中です</CardTitle>
-                <CardDescription>
-                  対戦が終わったら、この画面から結果を進めます。誤操作を避けるため、結果操作は下の主ボタンだけにまとめています。
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="rounded-lg border bg-muted/30 p-4">
