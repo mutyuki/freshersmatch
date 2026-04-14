@@ -12,6 +12,7 @@ export type ChipLedgerReason = "match_bet" | "match_payout" | "admin_adjustment"
 export type AdminRole = "staff" | "admin";
 export type AdminMatchResolutionType = "void" | "winner";
 export type ParticipantDisqualificationMode = "void_current_match" | "lose_current_match";
+export type MatchTurnRole = "first" | "second";
 
 export interface Database {
   public: {
@@ -157,6 +158,8 @@ export interface Database {
           staff_operator_id: string | null;
           player1_ready_at: string | null;
           player2_ready_at: string | null;
+          player1_turn_role: MatchTurnRole | null;
+          player2_turn_role: MatchTurnRole | null;
           started_at: string | null;
           agreed_bet_amount: number | null;
           dispute_count: number;
@@ -181,6 +184,8 @@ export interface Database {
           staff_operator_id?: string | null;
           player1_ready_at?: string | null;
           player2_ready_at?: string | null;
+          player1_turn_role?: MatchTurnRole | null;
+          player2_turn_role?: MatchTurnRole | null;
           started_at?: string | null;
           agreed_bet_amount?: number | null;
           dispute_count?: number;

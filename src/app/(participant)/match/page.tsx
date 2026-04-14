@@ -19,6 +19,7 @@ import {
   formatResultDelta,
   getMatchLocationSummary,
   getOpponentLabel,
+  getTurnRoleLabel,
   postParticipantAction,
   publishRuntimeUpdate,
 } from "@/components/participant/match-panel-utils";
@@ -141,6 +142,7 @@ export default function MatchPage(): JSX.Element {
 
   const title =
     isLoading || !resolvedRuntime ? "対戦案内を確認しています..." : "次の卓案内を確認する";
+  const turnRoleLabel = resolvedRuntime ? getTurnRoleLabel(resolvedRuntime) : null;
 
   return (
     <main className="flex min-h-full flex-col gap-4">
@@ -245,6 +247,12 @@ export default function MatchPage(): JSX.Element {
                       {getOpponentLabel(resolvedRuntime)}
                     </span>
                   </div>
+                  {turnRoleLabel ? (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-muted-foreground">手番</span>
+                      <span className="font-semibold text-foreground">{turnRoleLabel}</span>
+                    </div>
+                  ) : null}
                 </div>
                 <Button
                   type="button"
@@ -327,6 +335,12 @@ export default function MatchPage(): JSX.Element {
                       {formatBetAmount(resolvedRuntime.match?.agreedBetAmount ?? null)}
                     </span>
                   </div>
+                  {turnRoleLabel ? (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-muted-foreground">手番</span>
+                      <span className="font-semibold text-foreground">{turnRoleLabel}</span>
+                    </div>
+                  ) : null}
                 </div>
                 {!resolvedRuntime.match?.isStaffMatch ? (
                   <Button

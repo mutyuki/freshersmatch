@@ -208,10 +208,16 @@ async function buildParticipantRuntimeState(
   let match: MatchRow | null = null;
   let table: TableRow | null = null;
   let opponent: ParticipantRow | null = null;
+  let turnRole: ParticipantRuntimeState["turnRole"] = null;
 
   if (participant.current_match_id) {
     match = await fetchMatchById(participant.current_match_id);
     table = await fetchTableById(match.table_id);
+    turnRole = match.is_staff_match
+      ? null
+      : match.player1_participant_id === participant.id
+        ? match.player1_turn_role
+        : match.player2_turn_role;
 
     if (!match.is_staff_match) {
       const opponentParticipantId =
@@ -277,6 +283,7 @@ async function buildParticipantRuntimeState(
           nickname: opponent.nickname,
         }
       : null,
+    turnRole,
     opponentReady,
     winnerParticipantId: match?.winner_participant_id ?? null,
     winnerClaimedByParticipantId: match?.winner_claimed_by_participant_id ?? null,

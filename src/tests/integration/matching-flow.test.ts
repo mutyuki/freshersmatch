@@ -87,6 +87,8 @@ function createParticipantRow(
 }
 
 function createMatchRow(overrides: Partial<MatchRow> & Pick<MatchRow, "id">): MatchRow {
+  const isStaffMatch = overrides.is_staff_match ?? false;
+
   return {
     id: overrides.id,
     event_id: overrides.event_id ?? "event-1",
@@ -94,10 +96,12 @@ function createMatchRow(overrides: Partial<MatchRow> & Pick<MatchRow, "id">): Ma
     player1_participant_id: overrides.player1_participant_id ?? "participant-1",
     player2_participant_id: overrides.player2_participant_id ?? "participant-2",
     status: overrides.status ?? "reserved",
-    is_staff_match: overrides.is_staff_match ?? false,
+    is_staff_match: isStaffMatch,
     staff_operator_id: overrides.staff_operator_id ?? null,
     player1_ready_at: overrides.player1_ready_at ?? null,
     player2_ready_at: overrides.player2_ready_at ?? null,
+    player1_turn_role: overrides.player1_turn_role ?? (isStaffMatch ? null : "first"),
+    player2_turn_role: overrides.player2_turn_role ?? (isStaffMatch ? null : "second"),
     started_at: overrides.started_at ?? null,
     agreed_bet_amount: overrides.agreed_bet_amount ?? null,
     dispute_count: overrides.dispute_count ?? 0,
@@ -243,6 +247,12 @@ function buildRuntimeState(state: FakeState, participantId: string): Participant
   const table = match ? (state.tables[match.table_id] ?? null) : null;
   const opponentId = match ? getOpponentId(match, participantId) : null;
   const opponent = opponentId ? (state.participants[opponentId] ?? null) : null;
+  const turnRole =
+    match === null || match.is_staff_match
+      ? null
+      : match.player1_participant_id === participantId
+        ? match.player1_turn_role
+        : match.player2_turn_role;
   const resultDelta =
     participant.status === "result_confirmed" && participant.current_match_id
       ? state.chipLedger
@@ -287,6 +297,7 @@ function buildRuntimeState(state: FakeState, participantId: string): Participant
           nickname: opponent.nickname,
         }
       : null,
+    turnRole,
     opponentReady:
       match === null
         ? false

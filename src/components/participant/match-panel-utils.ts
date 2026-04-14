@@ -19,6 +19,18 @@ export function getOpponentLabel(runtime: ParticipantRuntimeState): string {
   return runtime.opponent?.nickname ?? "確認中";
 }
 
+export function getTurnRoleLabel(runtime: ParticipantRuntimeState): string | null {
+  if (runtime.turnRole === "first") {
+    return "あなたは先攻です";
+  }
+
+  if (runtime.turnRole === "second") {
+    return "あなたは後攻です";
+  }
+
+  return null;
+}
+
 export function getMatchLocationSummary(runtime: ParticipantRuntimeState): string {
   if (!runtime.table) {
     return "卓情報を確認しています";

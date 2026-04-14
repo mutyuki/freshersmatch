@@ -74,6 +74,10 @@ function createRuntime(
             participantId: "participant-2",
             nickname: "Sora",
           },
+    turnRole:
+      status === "queueing" || status === "disconnected"
+        ? null
+        : ("first" as const),
     opponentReady: status === "ready",
     winnerParticipantId: status === "result_confirmed" ? "participant-2" : null,
     winnerClaimedByParticipantId:
@@ -132,6 +136,7 @@ describe("participant match page", () => {
     expect(screen.getByText("卓が確定しました。すぐ向かってください")).toBeInTheDocument();
     expect(screen.getByText("3 卓")).toBeInTheDocument();
     expect(screen.getByText("Sora")).toBeInTheDocument();
+    expect(screen.getByText("あなたは先攻です")).toBeInTheDocument();
   });
 
   it("renders the ready-state variant inside the match reserved panel", () => {
@@ -144,6 +149,7 @@ describe("participant match page", () => {
     render(<MatchPage />);
 
     expect(screen.getByText("相手の準備完了を待っています")).toBeInTheDocument();
+    expect(screen.getByText("あなたは先攻です")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "開始前キャンセル" })).not.toBeInTheDocument();
   });
 
@@ -157,7 +163,31 @@ describe("participant match page", () => {
     render(<MatchPage />);
 
     expect(screen.getByText("対戦中です")).toBeInTheDocument();
+    expect(screen.getByText("あなたは先攻です")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "勝利を申告する" })).toBeInTheDocument();
+  });
+
+  it("does not render a turn role label for staff matches", () => {
+    useParticipantRuntime.mockReturnValue({
+      state: createRuntime("playing", {
+        turnRole: null,
+        match: {
+          id: "match-1",
+          status: "in_progress",
+          isStaffMatch: true,
+          agreedBetAmount: 4,
+          disputeCount: 0,
+        },
+        opponent: null,
+      }),
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+
+    render(<MatchPage />);
+
+    expect(screen.queryByText("あなたは先攻です")).not.toBeInTheDocument();
+    expect(screen.queryByText("あなたは後攻です")).not.toBeInTheDocument();
   });
 
   it("renders the claim wait panel after sending a win claim", () => {

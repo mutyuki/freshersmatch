@@ -22,6 +22,8 @@ export interface ParticipantRuntimeOpponent {
   nickname: string;
 }
 
+export type ParticipantTurnRole = "first" | "second";
+
 export interface ParticipantRuntimeState {
   participantId: string;
   eventId: string;
@@ -34,6 +36,7 @@ export interface ParticipantRuntimeState {
   table: ParticipantRuntimeTable | null;
   match: ParticipantRuntimeMatch | null;
   opponent: ParticipantRuntimeOpponent | null;
+  turnRole: ParticipantTurnRole | null;
   opponentReady: boolean;
   winnerParticipantId: string | null;
   winnerClaimedByParticipantId: string | null;

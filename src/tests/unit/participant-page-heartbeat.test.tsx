@@ -45,6 +45,7 @@ function createRuntime() {
     table: null,
     match: null,
     opponent: null,
+    turnRole: null,
     opponentReady: false,
     winnerParticipantId: null,
     winnerClaimedByParticipantId: null,

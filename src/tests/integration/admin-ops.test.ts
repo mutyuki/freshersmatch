@@ -75,6 +75,8 @@ function createParticipantRow(
 }
 
 function createMatchRow(overrides: Partial<MatchRow> & Pick<MatchRow, "id">): MatchRow {
+  const isStaffMatch = overrides.is_staff_match ?? false;
+
   return {
     id: overrides.id,
     event_id: overrides.event_id ?? "event-1",
@@ -82,10 +84,12 @@ function createMatchRow(overrides: Partial<MatchRow> & Pick<MatchRow, "id">): Ma
     player1_participant_id: overrides.player1_participant_id ?? "participant-1",
     player2_participant_id: overrides.player2_participant_id ?? "participant-2",
     status: overrides.status ?? "in_progress",
-    is_staff_match: overrides.is_staff_match ?? false,
+    is_staff_match: isStaffMatch,
     staff_operator_id: overrides.staff_operator_id ?? null,
     player1_ready_at: overrides.player1_ready_at ?? "2026-04-12T10:00:05.000Z",
     player2_ready_at: overrides.player2_ready_at ?? "2026-04-12T10:00:06.000Z",
+    player1_turn_role: overrides.player1_turn_role ?? (isStaffMatch ? null : "first"),
+    player2_turn_role: overrides.player2_turn_role ?? (isStaffMatch ? null : "second"),
     started_at: overrides.started_at ?? "2026-04-12T10:00:10.000Z",
     agreed_bet_amount: overrides.agreed_bet_amount ?? 100,
     dispute_count: overrides.dispute_count ?? 0,

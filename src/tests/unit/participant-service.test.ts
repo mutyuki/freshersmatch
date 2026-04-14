@@ -109,6 +109,8 @@ const normalMatch: MatchRow = {
   staff_operator_id: null,
   player1_ready_at: null,
   player2_ready_at: "2026-04-10T09:02:00.000Z",
+  player1_turn_role: "first",
+  player2_turn_role: "second",
   started_at: null,
   agreed_bet_amount: null,
   dispute_count: 0,
@@ -375,6 +377,7 @@ describe("participant service", () => {
       table: null,
       match: null,
       opponent: null,
+      turnRole: null,
       opponentReady: false,
       winnerParticipantId: null,
       winnerClaimedByParticipantId: null,
@@ -475,8 +478,46 @@ describe("participant service", () => {
         participantId: "participant-2",
         nickname: "Bob",
       },
+      turnRole: "first",
       opponentReady: true,
       canClaimWin: false,
+    });
+  });
+
+  it("resolves the participant turn role from the player2 side", async () => {
+    mockParticipantLookup({
+      "participant-1": {
+        ...baseParticipant,
+        status: "match_reserved",
+        current_match_id: "match-1",
+      },
+      "participant-2": {
+        ...baseParticipant,
+        id: "participant-2",
+        nickname: "Bob",
+      },
+    });
+    matchesMaybeSingle.mockResolvedValue({
+      data: {
+        ...normalMatch,
+        player1_participant_id: "participant-2",
+        player2_participant_id: "participant-1",
+        player1_turn_role: "second",
+        player2_turn_role: "first",
+      },
+      error: null,
+    });
+    tablesMaybeSingle.mockResolvedValue({
+      data: table,
+      error: null,
+    });
+
+    await expect(getParticipantRuntimeState("participant-1")).resolves.toMatchObject({
+      turnRole: "first",
+      opponent: {
+        participantId: "participant-2",
+        nickname: "Bob",
+      },
     });
   });
 
@@ -510,6 +551,7 @@ describe("participant service", () => {
 
     await expect(getParticipantRuntimeState("participant-1")).resolves.toMatchObject({
       opponent: null,
+      turnRole: null,
       opponentReady: true,
       canClaimWin: false,
       match: {
