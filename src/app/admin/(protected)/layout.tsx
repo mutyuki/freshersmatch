@@ -19,9 +19,10 @@ export default async function AdminLayout(
         <header className="rounded-2xl border bg-card px-7 py-7 shadow-sm">
           <div className="flex flex-col gap-6">
             <div className="space-y-3">
-              <div className="inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-                Freshers Match Admin
-              </div>
+              <p className="freshers-logo">Freshers Match</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+                Admin
+              </p>
               <h1 className="text-4xl font-semibold tracking-tight lg:text-5xl">Admin Console</h1>
               <p className="max-w-3xl text-base leading-7 text-muted-foreground lg:text-lg">
                 会場の状況確認とトラブル対応を、一覧性を落とさず操作できる共通レイアウトです。

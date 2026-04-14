@@ -269,7 +269,9 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                     <p className="mt-1">{table.currentMatchId ?? "なし"}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Occupants</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Occupants
+                    </p>
                     <p className="mt-1">
                       {table.occupantNicknames.length > 0
                         ? table.occupantNicknames.join(" / ")
@@ -277,7 +279,9 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Held by</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Held by
+                    </p>
                     <p className="mt-1">{table.heldByAdminDisplayName ?? "未保持"}</p>
                   </div>
                 </div>
@@ -382,7 +386,9 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                     <p className="mt-1">{selectedTable.currentMatchId ?? "なし"}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Occupants</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Occupants
+                    </p>
                     <p className="mt-1">
                       {selectedTable.occupantNicknames.length > 0
                         ? selectedTable.occupantNicknames.join(" / ")

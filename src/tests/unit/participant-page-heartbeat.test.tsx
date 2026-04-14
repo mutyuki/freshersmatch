@@ -1,12 +1,14 @@
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { replace, useParticipantHeartbeat, useParticipantRuntime, useRankingRealtime } = vi.hoisted(() => ({
-  replace: vi.fn(),
-  useParticipantHeartbeat: vi.fn(),
-  useParticipantRuntime: vi.fn(),
-  useRankingRealtime: vi.fn(),
-}));
+const { replace, useParticipantHeartbeat, useParticipantRuntime, useRankingRealtime } = vi.hoisted(
+  () => ({
+    replace: vi.fn(),
+    useParticipantHeartbeat: vi.fn(),
+    useParticipantRuntime: vi.fn(),
+    useRankingRealtime: vi.fn(),
+  }),
+);
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({

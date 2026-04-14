@@ -86,7 +86,7 @@ export default function RootPage(): JSX.Element {
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <Loader2Icon role="status" aria-label="Loading" className="size-5 animate-spin" />
         </div>
-        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">
+        <p className="freshers-logo mt-5 text-[1rem] tracking-[0.26em] text-foreground/80">
           Freshers Match
         </p>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">

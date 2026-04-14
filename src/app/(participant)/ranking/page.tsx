@@ -41,7 +41,9 @@ function ParticipantRankingList(props: {
                   {statusLabel ? <Badge variant="destructive">{statusLabel}</Badge> : null}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-base font-semibold text-foreground">{entry.nickname}</p>
+                  <p className="truncate text-base font-semibold text-foreground">
+                    {entry.nickname}
+                  </p>
                   <p className="mt-1 text-xs uppercase tracking-[0.22em] text-muted-foreground">
                     Official chips
                   </p>
@@ -130,10 +132,7 @@ export default function ParticipantRankingPage(): JSX.Element {
 
   return (
     <main className="flex min-h-full flex-col gap-4">
-      <header className="space-y-3 px-1 pb-2 pt-4">
-        <p className="inline-flex w-fit items-center rounded-full border px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Freshers Match
-        </p>
+      <header className="space-y-2 px-1 pb-2 pt-1">
         <div className="space-y-2">
           <p className="text-sm leading-6 text-muted-foreground">
             自分の行を目で追いやすいように強調表示しています。現在の所持チップと順位を確認して、次の一戦の目標を決めましょう。

@@ -346,10 +346,7 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
                       {formatDateTime(match.startedAt)}
                     </TableCell>
                     <TableCell className="px-4 py-4 align-top text-muted-foreground">
-                      <Badge
-                        variant="outline"
-                        className="border-border bg-card text-slate-100"
-                      >
+                      <Badge variant="outline" className="border-border bg-card text-slate-100">
                         {match.disputeCount}
                       </Badge>
                     </TableCell>
@@ -423,14 +420,18 @@ export function MatchTable(props: MatchTableProps): JSX.Element {
                 </div>
                 <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Players</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Players
+                    </p>
                     <p className="mt-1">
                       {selectedMatch.participant1Nickname} /{" "}
                       {selectedMatch.participant2Nickname ?? "運営スタッフ"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Recovery</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Recovery
+                    </p>
                     <p className="mt-1">
                       {actionState?.type === "winner"
                         ? "勝者を確定し、結果確定状態へ進めます。"

@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useState, type JSX } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { useRankingRealtime } from "@/hooks/useRankingRealtime";
 import type { RankingSnapshot } from "@/lib/contracts/ranking";
@@ -94,7 +101,10 @@ export default function MonitorRankingPage(): JSX.Element {
               const statusLabel = getStatusLabel(entry.status);
 
               return (
-                <TableRow key={entry.participantId} className={cn(index % 2 === 0 && "bg-muted/20")}>
+                <TableRow
+                  key={entry.participantId}
+                  className={cn(index % 2 === 0 && "bg-muted/20")}
+                >
                   <TableCell className="text-2xl font-semibold">{entry.rank}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">

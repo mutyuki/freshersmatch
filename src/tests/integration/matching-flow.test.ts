@@ -695,6 +695,28 @@ function createSupabaseMock(state: FakeState) {
 
           return query;
         },
+        update(values: Record<string, unknown>) {
+          return {
+            eq(column: string, value: string) {
+              return {
+                select(columns: string) {
+                  let updatedRows: any[] = [];
+                  if (table === "participants" && column === "id") {
+                    const participant = state.participants[value];
+                    if (participant) {
+                      Object.assign(participant, values);
+                      updatedRows = [participant];
+                    }
+                  }
+                  return Promise.resolve({
+                    data: updatedRows,
+                    error: null,
+                  });
+                },
+              };
+            },
+          };
+        },
       };
     },
     rpc(fn: string, args: Record<string, boolean | string | null>) {

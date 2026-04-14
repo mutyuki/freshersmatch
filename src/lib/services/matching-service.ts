@@ -65,10 +65,7 @@ type MatchingServiceSupabaseClient = {
   from(table: "tables"): TableQuery<TableRow>;
   from(table: "matches"): TableQuery<MatchRow>;
   rpc(fn: "start_queue_and_try_match", args: StartQueueRpcArgs): RpcResult<StartQueueRpcRow>;
-  rpc(
-    fn: "start_queue_and_try_match",
-    args: LegacyStartQueueRpcArgs,
-  ): RpcResult<StartQueueRpcRow>;
+  rpc(fn: "start_queue_and_try_match", args: LegacyStartQueueRpcArgs): RpcResult<StartQueueRpcRow>;
   rpc(
     fn: "cancel_queue",
     args: Database["public"]["Functions"]["cancel_queue"]["Args"],
@@ -262,11 +259,7 @@ async function enqueueParticipantWithoutMatch(participantId: string): Promise<vo
     .select("id");
 
   if (error) {
-    throw new AppError(
-      "matching_start_failed",
-      "Failed to place participant in queue.",
-      500,
-    );
+    throw new AppError("matching_start_failed", "Failed to place participant in queue.", 500);
   }
 
   if (!data || data.length === 0) {
@@ -329,10 +322,7 @@ async function buildMatchAttemptPlan(params: {
 
 async function invokeStartQueueRpc(args: StartQueueRpcArgs): Promise<StartQueueRpcRow> {
   const supabase = getMatchingServiceSupabaseClient();
-  let { data, error } = await supabase.rpc(
-    "start_queue_and_try_match",
-    args,
-  );
+  let { data, error } = await supabase.rpc("start_queue_and_try_match", args);
 
   if (error && isLegacyStartQueueRpcSchemaError(error.message)) {
     ({ data, error } = await supabase.rpc("start_queue_and_try_match", {

@@ -133,3 +133,16 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .freshers-logo {
+    display: inline-block;
+    font-size: clamp(1.15rem, 0.95rem + 1.1vw, 1.65rem);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--foreground);
+    white-space: nowrap;
+  }
+}

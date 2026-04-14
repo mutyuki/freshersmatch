@@ -144,10 +144,7 @@ export default function MatchPage(): JSX.Element {
 
   return (
     <main className="flex min-h-full flex-col gap-4">
-      <header className="space-y-3 px-1 pb-2 pt-4">
-        <p className="inline-flex w-fit items-center rounded-full border px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Freshers Match
-        </p>
+      <header className="space-y-2 px-1 pb-2 pt-1">
         <div className="space-y-2">
           <p className="text-sm leading-6 text-muted-foreground">
             いま必要な情報だけを、片手で迷わず操作できる並びで表示します。

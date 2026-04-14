@@ -13,9 +13,10 @@ export default async function AdminLoginPage(): Promise<JSX.Element> {
         <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-6xl items-center justify-center">
           <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-[1.05fr_0.95fr]">
             <section className="flex flex-col justify-center rounded-2xl border bg-card p-10 shadow-sm">
-              <div className="inline-flex w-fit items-center rounded-full border px-4 py-1.5 text-sm font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-                Freshers Match Admin
-              </div>
+              <p className="freshers-logo">Freshers Match</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+                Admin
+              </p>
               <h1 className="mt-6 text-4xl font-semibold tracking-[-0.05em] lg:text-5xl">
                 会場運営ログイン
               </h1>
@@ -32,9 +33,7 @@ export default async function AdminLoginPage(): Promise<JSX.Element> {
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                 Secure Access
               </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-                パスコードを入力
-              </h2>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight">パスコードを入力</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 会場共有のパスコードでログインすると、すぐに管理画面へ移動します。
               </p>

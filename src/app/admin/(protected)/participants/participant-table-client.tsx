@@ -322,7 +322,9 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
             <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
               Participant Operations
             </p>
-            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">Participants</h2>
+            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">
+              Participants
+            </h2>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
               現在状態を見ながら、チップ修正・一時停止・一時停止解除・失格を安全に実行できます。
               破壊的な変更は確認ダイアログで対象者と副作用を必ず確認してください。
@@ -364,10 +366,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                 return (
                   <TableRow
                     key={participant.participantId}
-                    className={cn(
-                      "border-border hover:bg-card",
-                      getRowTone(participant.status),
-                    )}
+                    className={cn("border-border hover:bg-card", getRowTone(participant.status))}
                   >
                     <TableCell className="px-4 py-4 align-top">
                       <div className="space-y-1">
@@ -386,10 +385,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                     </TableCell>
                     <TableCell className="px-4 py-4 align-top text-muted-foreground">
                       {participant.currentMatchId ? (
-                        <Badge
-                          variant="outline"
-                          className="border-border bg-card text-slate-100"
-                        >
+                        <Badge variant="outline" className="border-border bg-card text-slate-100">
                           {participant.currentMatchId}
                         </Badge>
                       ) : (

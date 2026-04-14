@@ -61,7 +61,10 @@ describe("loadRankingSnapshot", () => {
         }),
     );
 
-    const promise = loadRankingSnapshot("ランキングの取得に失敗しました。", "タイムアウトしました。");
+    const promise = loadRankingSnapshot(
+      "ランキングの取得に失敗しました。",
+      "タイムアウトしました。",
+    );
     const expectation = expect(promise).rejects.toThrow("タイムアウトしました。");
 
     await vi.advanceTimersByTimeAsync(16_000);
@@ -107,7 +110,10 @@ describe("loadRankingSnapshot", () => {
         ),
       );
 
-    const promise = loadRankingSnapshot("ランキングの取得に失敗しました。", "タイムアウトしました。");
+    const promise = loadRankingSnapshot(
+      "ランキングの取得に失敗しました。",
+      "タイムアウトしました。",
+    );
 
     await vi.advanceTimersByTimeAsync(8000);
 

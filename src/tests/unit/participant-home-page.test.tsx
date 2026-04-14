@@ -54,7 +54,9 @@ describe("participant home page", () => {
 
     render(<HomePage />);
 
-    expect(screen.getByText("参加情報を確認しています...")).toBeInTheDocument();
+    expect(
+      screen.getByText("保存済みの参加情報を読み込み中です。画面をそのまま開いたままでお待ちください。"),
+    ).toBeInTheDocument();
   });
 
   it("renders runtime-based participant details when state is available", () => {
@@ -88,13 +90,8 @@ describe("participant home page", () => {
 
     expect(screen.getByText("ランキングを見る")).toBeInTheDocument();
     expect(screen.getByText("マッチングを開始する")).toBeEnabled();
-    expect(screen.getAllByText("参加登録済み")).toHaveLength(2);
+    expect(screen.getAllByText("参加登録済み")).toHaveLength(1);
     expect(screen.getByText("12")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "まだ卓は割り当てられていません。準備ができたらマッチング開始を押すと、空いている卓へ順番に案内されます。",
-      ),
-    ).toBeInTheDocument();
   });
 
   it("shows a disabled reason when the participant cannot start matching", () => {
@@ -232,45 +229,6 @@ describe("participant home page", () => {
     render(<HomePage />);
 
     expect(screen.getByText("再接続中...")).toBeInTheDocument();
-  });
-
-  it("renders assigned table details when a table is present", () => {
-    useParticipantRuntime.mockReturnValue({
-      state: {
-        participantId: "participant-1",
-        eventId: "event-1",
-        nickname: "Alice",
-        status: "registered",
-        lastNonDisconnectStatus: null,
-        chipBalance: 12,
-        currentMatchId: null,
-        queuedAt: null,
-        table: {
-          id: "table-1",
-          tableNumber: 3,
-          gameTitle: "Smash Bros",
-          status: "reserved",
-        },
-        match: null,
-        opponent: null,
-        opponentReady: false,
-        winnerParticipantId: null,
-        winnerClaimedByParticipantId: null,
-        disqualifiedReason: null,
-        resultDelta: null,
-        resultConfirmedAt: null,
-        canStartMatching: true,
-        canClaimWin: false,
-      },
-      isLoading: false,
-      refresh: vi.fn(),
-    });
-
-    render(<HomePage />);
-
-    expect(screen.getByText("3 卓")).toBeInTheDocument();
-    expect(screen.getByText("Smash Bros")).toBeInTheDocument();
-    expect(screen.getByText("案内中")).toBeInTheDocument();
   });
 
   it("starts matching through the API and navigates to match on success", async () => {

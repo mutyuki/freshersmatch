@@ -4,6 +4,8 @@ import { verifyParticipantSession } from "@/lib/auth/participant-session";
 import { publishInvalidation } from "@/lib/realtime/publisher";
 import { executeStartQueue } from "@/lib/services/matching-service";
 
+import type { RealtimeScope } from "@/lib/realtime/channels";
+
 export async function POST(request: Request): Promise<Response> {
   try {
     const sessionToken = getParticipantBearerSessionToken(request);
@@ -12,7 +14,7 @@ export async function POST(request: Request): Promise<Response> {
     const participantIds = runtime.opponent
       ? [runtime.participantId, runtime.opponent.participantId]
       : [runtime.participantId];
-    const scopes = runtime.currentMatchId
+    const scopes: RealtimeScope[] = runtime.currentMatchId
       ? ["participant", "match", "admin"]
       : ["participant", "admin"];
 

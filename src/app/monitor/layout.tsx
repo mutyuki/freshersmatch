@@ -8,9 +8,10 @@ export default function MonitorLayout(props: Readonly<{ children: ReactNode }>):
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-7xl flex-col">
         <header className="flex flex-wrap items-end justify-between gap-4 border-b pb-6">
           <div className="space-y-3">
-            <div className="inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-              Freshers Match Monitor
-            </div>
+            <p className="freshers-logo">Freshers Match</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+              Monitor
+            </p>
             <div className="space-y-2">
               <h1 className="text-4xl leading-none font-semibold tracking-[-0.04em] lg:text-5xl">
                 Ranking Board

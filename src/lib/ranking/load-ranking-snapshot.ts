@@ -52,17 +52,13 @@ export async function loadRankingSnapshot(
     try {
       return await loadRankingSnapshotOnce(fallbackMessage, timeoutMessage);
     } catch (error) {
-      lastError =
-        error instanceof Error ? error : new Error("ランキングの取得に失敗しました。");
+      lastError = error instanceof Error ? error : new Error("ランキングの取得に失敗しました。");
 
       const isRetryableTimeout =
         lastError.message === timeoutMessage || lastError.name === "AbortError";
       const isRetryableNetworkError = lastError instanceof TypeError;
 
-      if (
-        attempt < MAX_RANKING_ATTEMPTS &&
-        (isRetryableTimeout || isRetryableNetworkError)
-      ) {
+      if (attempt < MAX_RANKING_ATTEMPTS && (isRetryableTimeout || isRetryableNetworkError)) {
         continue;
       }
 

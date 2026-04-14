@@ -284,7 +284,9 @@ export function StaffMatchForm(props: StaffMatchFormProps): JSX.Element {
             >
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{match.participant1Nickname}</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {match.participant1Nickname}
+                  </p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {match.tableNumber ? `${match.tableNumber} 卓` : "卓未割当"} /{" "}
                     {match.displayStatus === "winner_claimed" ? "運営確定待ち" : "対戦中"}

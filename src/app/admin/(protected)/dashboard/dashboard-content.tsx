@@ -152,7 +152,9 @@ function SummaryCard(props: SummaryCardProps): JSX.Element {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{props.title}</p>
-          <p className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-foreground">{props.value}</p>
+          <p className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-foreground">
+            {props.value}
+          </p>
         </div>
         <span
           className={cn(
@@ -349,7 +351,9 @@ export function DashboardSummary(props: DashboardSummaryProps): JSX.Element {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{table.gameTitle}</p>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {table.gameTitle}
+                        </p>
                         <p className="mt-2 text-sm leading-6 text-muted-foreground">
                           {table.occupantNicknames.length > 0
                             ? table.occupantNicknames.join(" vs ")
@@ -512,7 +516,9 @@ export function DashboardSummary(props: DashboardSummaryProps): JSX.Element {
                     <p className="text-sm font-semibold text-foreground">
                       {match.tableNumber ? `${match.tableNumber} 卓` : "卓未割当"}
                     </p>
-                    <p className="mt-2 text-sm text-muted-foreground">dispute {match.disputeCount} 回</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      dispute {match.disputeCount} 回
+                    </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       最終発生: {formatDateTime(match.lastDisputedAt)}
                     </p>
