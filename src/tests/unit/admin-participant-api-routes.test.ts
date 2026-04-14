@@ -8,6 +8,7 @@ const {
   pauseParticipant,
   unpauseParticipant,
   disqualifyParticipant,
+  deleteParticipant,
   publishInvalidation,
 } = vi.hoisted(() => ({
   requireAdminSession: vi.fn(),
@@ -17,6 +18,7 @@ const {
   pauseParticipant: vi.fn(),
   unpauseParticipant: vi.fn(),
   disqualifyParticipant: vi.fn(),
+  deleteParticipant: vi.fn(),
   publishInvalidation: vi.fn(),
 }));
 
@@ -34,6 +36,7 @@ vi.mock("@/lib/services/admin-participant-service", () => ({
   pauseParticipant,
   unpauseParticipant,
   disqualifyParticipant,
+  deleteParticipant,
 }));
 
 vi.mock("@/lib/realtime/publisher", () => ({
@@ -46,6 +49,7 @@ import { POST as postChipAdjust } from "@/app/api/admin/participant/chip-adjust/
 import { POST as postPause } from "@/app/api/admin/participant/pause/route";
 import { POST as postUnpause } from "@/app/api/admin/participant/unpause/route";
 import { POST as postDisqualify } from "@/app/api/admin/participant/disqualify/route";
+import { POST as postDelete } from "@/app/api/admin/participant/delete/route";
 
 describe("admin participant api routes", () => {
   beforeEach(() => {
@@ -136,6 +140,41 @@ describe("admin participant api routes", () => {
       participantId: "participant-1",
       delta: 5,
       reason: "manual correction",
+    });
+    expect(publishInvalidation).toHaveBeenCalledWith({
+      eventId: "event-1",
+      scopes: ["participant", "admin", "ranking"],
+      participantIds: ["participant-1"],
+    });
+  });
+
+  it("publishes participant, admin, and ranking invalidation for delete", async () => {
+    requireAdminSession.mockResolvedValue({
+      adminUserId: "admin-1",
+    });
+    deleteParticipant.mockResolvedValue({
+      eventId: "event-1",
+      participantId: "participant-1",
+    });
+
+    const response = await postDelete(
+      new Request("http://localhost/api/admin/participant/delete", {
+        method: "POST",
+        body: JSON.stringify({
+          participantId: "participant-1",
+          confirm: true,
+        }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        ok: true,
+      },
+    });
+    expect(deleteParticipant).toHaveBeenCalledWith({
+      adminUserId: "admin-1",
+      participantId: "participant-1",
     });
     expect(publishInvalidation).toHaveBeenCalledWith({
       eventId: "event-1",

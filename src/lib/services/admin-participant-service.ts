@@ -19,6 +19,10 @@ type DisqualifyParticipantRpcArgs =
   Database["public"]["Functions"]["disqualify_participant"]["Args"];
 type DisqualifyParticipantRpcRow =
   Database["public"]["Functions"]["disqualify_participant"]["Returns"][number];
+type DeleteParticipantRpcArgs =
+  Database["public"]["Functions"]["delete_participant_by_admin"]["Args"];
+type DeleteParticipantRpcRow =
+  Database["public"]["Functions"]["delete_participant_by_admin"]["Returns"][number];
 
 type QueryResult<TData> = Promise<{
   data: TData;
@@ -61,6 +65,10 @@ type AdminParticipantSupabaseClient = {
     fn: "disqualify_participant",
     args: DisqualifyParticipantRpcArgs,
   ): RpcResult<DisqualifyParticipantRpcRow>;
+  rpc(
+    fn: "delete_participant_by_admin",
+    args: DeleteParticipantRpcArgs,
+  ): RpcResult<DeleteParticipantRpcRow>;
 };
 
 export interface AdminParticipantMutationResult {
@@ -187,6 +195,29 @@ function normalizeDisqualifyError(message: string): never {
   throw new AppError("participant_disqualify_failed", "Failed to disqualify participant.", 500);
 }
 
+function normalizeDeleteError(message: string): never {
+  if (message.includes("Admin user not found")) {
+    throw new AppError("admin_user_not_found", "Admin user was not found.", 404);
+  }
+
+  if (message.includes("Participant not found")) {
+    throw new AppError("participant_not_found", "Participant was not found.", 404);
+  }
+
+  if (
+    message.includes("cannot be deleted") ||
+    message.includes("active match references exist") ||
+    message.includes("match history exists")
+  ) {
+    throw new DomainConflictError(
+      "participant_delete_conflict",
+      "Participant cannot be deleted from the current state.",
+    );
+  }
+
+  throw new AppError("participant_delete_failed", "Failed to delete participant.", 500);
+}
+
 export async function listAdminParticipants(eventId: string): Promise<AdminParticipantListItem[]> {
   const initialParticipants = await fetchParticipants(eventId);
 
@@ -204,9 +235,9 @@ export async function listAdminParticipants(eventId: string): Promise<AdminParti
     nickname: participant.nickname,
     status: participant.status,
     chipBalance: participant.chip_balance,
-    currentMatchId: participant.current_match_id,
+    currentMatchId: participant.current_match_id ?? null,
     lastSeenAt: participant.last_seen_at,
-    disqualifiedReason: participant.disqualified_reason,
+    disqualifiedReason: participant.disqualified_reason ?? null,
   }));
 }
 
@@ -297,5 +328,25 @@ export async function disqualifyParticipant(params: {
     eventId: participant.event_id,
     participantId: participant.id,
     affectedMatchId: data?.[0]?.affected_match_id ?? null,
+  };
+}
+
+export async function deleteParticipant(params: {
+  adminUserId: string;
+  participantId: string;
+}): Promise<AdminParticipantMutationResult> {
+  const participant = await fetchParticipantById(params.participantId);
+  const { error } = await getAdminParticipantSupabaseClient().rpc("delete_participant_by_admin", {
+    p_admin_user_id: params.adminUserId,
+    p_participant_id: params.participantId,
+  });
+
+  if (error) {
+    normalizeDeleteError(error.message);
+  }
+
+  return {
+    eventId: participant.event_id,
+    participantId: participant.id,
   };
 }

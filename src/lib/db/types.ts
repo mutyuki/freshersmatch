@@ -290,6 +290,13 @@ export interface Database {
         };
         Returns: { participant_status: ParticipantStatus; affected_match_id: string | null }[];
       };
+      delete_participant_by_admin: {
+        Args: {
+          p_admin_user_id: string;
+          p_participant_id: string;
+        };
+        Returns: { participant_id: string }[];
+      };
       force_release_table: {
         Args: { p_admin_user_id: string; p_table_id: string };
         Returns: { table_status: TableStatus; affected_match_id: string | null }[];

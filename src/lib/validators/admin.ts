@@ -75,6 +75,10 @@ export const adminUnpauseParticipantSchema = confirmParticipantActionSchema;
 
 export type AdminUnpauseParticipantInput = z.infer<typeof adminUnpauseParticipantSchema>;
 
+export const adminDeleteParticipantSchema = confirmParticipantActionSchema;
+
+export type AdminDeleteParticipantInput = z.infer<typeof adminDeleteParticipantSchema>;
+
 export const adminDisqualifyParticipantSchema = z
   .object({
     participantId: z.string().trim().min(1),

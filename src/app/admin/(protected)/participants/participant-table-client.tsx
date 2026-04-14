@@ -7,6 +7,7 @@ import {
   PlayCircle,
   RefreshCw,
   ShieldAlert,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 
@@ -63,6 +64,7 @@ type ActionState =
   | { type: "pause"; participantId: string }
   | { type: "unpause"; participantId: string }
   | { type: "disqualify"; participantId: string }
+  | { type: "delete"; participantId: string }
   | null;
 
 const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
@@ -105,6 +107,7 @@ function StatusBadge({ status }: { status: AdminParticipantListItem["status"] })
 
 export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
   const [data, setData] = useState(props.initialData);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>(null);
@@ -120,6 +123,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
 
   useEffect(() => {
     isMountedRef.current = true;
+    setIsHydrated(true);
     return () => {
       isMountedRef.current = false;
     };
@@ -283,6 +287,18 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
             }),
           });
           break;
+        case "delete":
+          response = await fetch("/api/admin/participant/delete", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              participantId: selectedParticipant.participantId,
+              confirm: true,
+            }),
+          });
+          break;
       }
 
       const payload = (await response.json().catch(() => null)) as MutationResponse | null;
@@ -326,7 +342,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
               Participants
             </h2>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-              現在状態を見ながら、チップ修正・一時停止・一時停止解除・失格を安全に実行できます。
+              現在状態を見ながら、チップ修正・一時停止・一時停止解除・失格・削除を安全に実行できます。
               破壊的な変更は確認ダイアログで対象者と副作用を必ず確認してください。
             </p>
           </div>
@@ -362,6 +378,9 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                 const canPause =
                   participant.status !== "paused" && participant.status !== "disqualified";
                 const canUnpause = participant.status === "paused";
+                const currentMatchId = participant.currentMatchId ?? null;
+                const canDelete = currentMatchId === null;
+                const isActionLocked = !isHydrated || isSubmitting;
 
                 return (
                   <TableRow
@@ -405,7 +424,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={isSubmitting}
+                          disabled={isActionLocked}
                           onClick={() =>
                             setActionState({
                               type: "chip-adjust",
@@ -418,7 +437,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={!canPause || isSubmitting}
+                          disabled={!canPause || isActionLocked}
                           onClick={() =>
                             setActionState({
                               type: "pause",
@@ -431,7 +450,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={!canUnpause || isSubmitting}
+                          disabled={!canUnpause || isActionLocked}
                           onClick={() =>
                             setActionState({
                               type: "unpause",
@@ -444,7 +463,7 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                         <Button
                           size="sm"
                           variant="destructive"
-                          disabled={participant.status === "disqualified" || isSubmitting}
+                          disabled={participant.status === "disqualified" || isActionLocked}
                           onClick={() =>
                             setActionState({
                               type: "disqualify",
@@ -453,6 +472,19 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                           }
                         >
                           失格
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={!canDelete || isActionLocked}
+                          onClick={() =>
+                            setActionState({
+                              type: "delete",
+                              participantId: participant.participantId,
+                            })
+                          }
+                        >
+                          削除
                         </Button>
                       </div>
                     </TableCell>
@@ -472,6 +504,8 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                 <Coins className="size-5" />
               ) : actionState?.type === "unpause" ? (
                 <PlayCircle className="size-5" />
+              ) : actionState?.type === "delete" ? (
+                <Trash2 className="size-5" />
               ) : actionState?.type === "pause" ? (
                 <PauseCircle className="size-5" />
               ) : (
@@ -485,6 +519,8 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                   ? "一時停止を確認"
                   : actionState?.type === "unpause"
                     ? "一時停止解除を確認"
+                    : actionState?.type === "delete"
+                      ? "参加者削除を確認"
                     : "失格処理を確認"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-left text-muted-foreground">
@@ -615,6 +651,15 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
                 </div>
               ) : null}
 
+              {actionState?.type === "delete" ? (
+                <Alert className="border-destructive/20 bg-destructive/10 text-destructive">
+                  <AlertTriangle className="size-4" />
+                  <AlertDescription>
+                    参加者をDBから完全に削除します。現在試合がある参加者や進行中対戦参照が残る参加者は削除できません。削除時は関連する対戦履歴も削除されます。
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+
               {actionError ? (
                 <Alert className="border-destructive/20 bg-destructive/10 text-destructive">
                   <AlertTriangle className="size-4" />
@@ -633,7 +678,11 @@ export function ParticipantTable(props: ParticipantTableProps): JSX.Element {
               キャンセル
             </AlertDialogCancel>
             <AlertDialogAction
-              variant={actionState?.type === "disqualify" ? "destructive" : "default"}
+              variant={
+                actionState?.type === "disqualify" || actionState?.type === "delete"
+                  ? "destructive"
+                  : "default"
+              }
               disabled={!selectedParticipant || Boolean(submittingParticipantId)}
               onClick={runAction}
             >
