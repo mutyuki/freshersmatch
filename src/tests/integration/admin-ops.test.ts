@@ -110,7 +110,8 @@ function createTableRow(
     table_number: overrides.table_number,
     game_title: overrides.game_title ?? "Smash Bros",
     status: overrides.status ?? "in_use",
-    current_match_id: overrides.current_match_id ?? "match-1",
+    current_match_id:
+      overrides.current_match_id === undefined ? "match-1" : overrides.current_match_id,
     held_by_admin_user_id: overrides.held_by_admin_user_id ?? null,
     created_at: overrides.created_at ?? "2026-04-12T10:00:00.000Z",
     updated_at: overrides.updated_at ?? "2026-04-12T10:00:00.000Z",
@@ -305,9 +306,12 @@ function createSupabaseMock(state: FakeState) {
     p_table_id: string | null;
   }): StartStaffMatchRpcRow {
     const participant = getParticipant(state, args.p_participant_id);
+    const autoSelectableTables = Object.values(state.tables).filter(
+      (candidate) => candidate.status === "available",
+    );
     const table =
       (args.p_table_id ? state.tables[args.p_table_id] : null) ??
-      Object.values(state.tables).find((candidate) => candidate.status === "available");
+      autoSelectableTables[Math.floor(Math.random() * autoSelectableTables.length)];
 
     if (!table) {
       throw new Error("No available table found");
@@ -692,6 +696,55 @@ describe("admin ops", () => {
       ["match_bet", -80],
       ["match_payout", 80],
     ]);
+  });
+
+  it("chooses a random available table for auto-assigned staff matches", async () => {
+    state.matches = {};
+    state.tables = {
+      "table-1": createTableRow({
+        id: "table-1",
+        table_number: 1,
+        status: "available",
+        current_match_id: null,
+      }),
+      "table-2": createTableRow({
+        id: "table-2",
+        table_number: 2,
+        status: "available",
+        current_match_id: null,
+      }),
+    };
+    state.chipLedger = [];
+    state.participants = {
+      "participant-1": createParticipantRow({
+        id: "participant-1",
+        nickname: "Alice",
+        status: "queueing",
+        last_non_disconnect_status: "queueing",
+        current_match_id: null,
+        chip_balance: 80,
+      }),
+    };
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+
+    const startResult = await startStaffMatch({
+      adminUserId: "admin-1",
+      participantId: "participant-1",
+    });
+
+    expect(startResult.tableId).toBe("table-2");
+    expect(state.matches["match-1"]).toMatchObject({
+      table_id: "table-2",
+      is_staff_match: true,
+    });
+    expect(state.tables["table-1"]).toMatchObject({
+      status: "available",
+      current_match_id: null,
+    });
+    expect(state.tables["table-2"]).toMatchObject({
+      status: "in_use",
+      current_match_id: "match-1",
+    });
   });
 
   it("voids the current match on disqualification without leaving chip or table corruption", async () => {

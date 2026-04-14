@@ -83,6 +83,7 @@
   - `chip_balance <= 0` の場合は業務条件エラーを返す
   - `registered` の参加者は `queueing` に遷移させた上でマッチ試行する
   - 既に `queueing` の参加者に対しては、待機状態を維持したままマッチ試行のみ行える
+  - 通常マッチの卓候補は service 側で空き卓からランダムに 1 卓選んで `p_table_id` に渡す
   - `p_opponent_participant_id` または `p_table_id` が `null` の場合は `queueing` にするだけで終了する
   - 指定した opponent / table は RPC 内で再検証し、無効化されていた場合は代替候補を選ばず `queueing` のまま返す
   - match / participants / tables の多表更新はこの RPC だけが行う
@@ -200,6 +201,9 @@
   - `p_table_id uuid nullable`
 - 戻り値:
   - `match_id uuid`
+- 補足:
+  - `p_table_id` が `null` の場合は、対象 event の空き卓からランダムに 1 卓を選んで運営戦を開始する
+  - `p_table_id` が指定されている場合は、その卓だけを再検証して使う
 
 ### `resolve_staff_match`
 

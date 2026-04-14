@@ -197,9 +197,6 @@ async function fetchAvailableTables(eventId: string): Promise<TableRow[]> {
     .eq("event_id", eventId)
     .eq("status", "available")
     .is("current_match_id", null)
-    .order("table_number", {
-      ascending: true,
-    })
     .limit(5);
 
   if (error) {
@@ -207,6 +204,16 @@ async function fetchAvailableTables(eventId: string): Promise<TableRow[]> {
   }
 
   return data ?? [];
+}
+
+function chooseTable(params: { availableTables: TableRow[] }): TableRow | null {
+  if (params.availableTables.length === 0) {
+    return null;
+  }
+
+  const randomIndex = Math.floor(Math.random() * params.availableTables.length);
+
+  return params.availableTables[randomIndex] ?? null;
 }
 
 async function fetchMatchById(matchId: string): Promise<MatchRow> {
@@ -303,7 +310,9 @@ async function buildMatchAttemptPlan(params: {
     };
   }
 
-  const table = availableTables[0] ?? null;
+  const table = chooseTable({
+    availableTables,
+  });
 
   if (!table) {
     return {

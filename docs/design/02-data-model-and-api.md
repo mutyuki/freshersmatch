@@ -580,15 +580,17 @@ APIから切り出して `MatchingService` として実装する。
 2. 一時停止・失格・切断を除外する
 3. 空き卓を取得する
 4. 対戦相手候補をランダム選出する
-5. 直前対戦相手を可能なら除外する
-6. 候補不足なら除外制約を外す
-7. 一定待機超過者を運営戦候補として返す
-8. `start_queue_and_try_match` RPC に `participant_id / opponent_participant_id / table_id` を組み立てて渡す
-9. RPC 実行結果から `ParticipantRuntimeState` を再構築して返す
+5. 空き卓候補から卓をランダム選出する
+6. 直前対戦相手を可能なら除外する
+7. 候補不足なら除外制約を外す
+8. 一定待機超過者を運営戦候補として返す
+9. `start_queue_and_try_match` RPC に `participant_id / opponent_participant_id / table_id` を組み立てて渡す
+10. RPC 実行結果から `ParticipantRuntimeState` を再構築して返す
 
 固定方針:
 
 - 相手候補選定、直前相手回避、運営戦候補判定などの業務ルールは service / domain に置いてよい
+- 通常マッチの卓選択も service が担当し、空き卓候補からランダムに 1 卓を選ぶ
 - ただし、match / participants / tables の多表更新そのものは `start_queue_and_try_match` RPC を唯一の真実源にする
 - RPC は service が選んだ opponent / table を再検証して使い、無効なら代替候補を選ばず queueing 継続に倒す
 - service が直接 `match / participants / tables` を個別更新してマッチ成立を作る実装は行わない

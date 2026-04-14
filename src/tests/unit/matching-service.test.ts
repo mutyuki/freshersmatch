@@ -285,6 +285,55 @@ describe("matching service", () => {
     expect(getParticipantRuntimeState).toHaveBeenCalledWith("participant-1");
   });
 
+  it("chooses a random available table for the created match", async () => {
+    getSupabaseAdminClient.mockReturnValue(
+      createSupabaseMock({
+        events: [createEventRow()],
+        participants: [
+          createParticipantRow({
+            id: "participant-1",
+            nickname: "Alice",
+          }),
+          createParticipantRow({
+            id: "participant-2",
+            nickname: "Bob",
+            status: "queueing",
+            last_non_disconnect_status: "queueing",
+            queued_at: "2026-04-12T09:00:00.000Z",
+          }),
+        ],
+        tables: [
+          createTableRow({ id: "table-1", table_number: 1 }),
+          createTableRow({ id: "table-2", table_number: 2 }),
+        ],
+      }),
+    );
+    rpc.mockResolvedValue({
+      data: [
+        {
+          match_id: "match-1",
+          participant_status: "match_reserved",
+        },
+      ],
+      error: null,
+    });
+    getParticipantRuntimeState.mockResolvedValue({
+      participantId: "participant-1",
+      status: "match_reserved",
+    });
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.99);
+
+    await executeStartQueue({
+      participantId: "participant-1",
+    });
+
+    expect(rpc).toHaveBeenCalledWith("start_queue_and_try_match", {
+      p_participant_id: "participant-1",
+      p_opponent_participant_id: "participant-2",
+      p_table_id: "table-2",
+    });
+  });
+
   it("falls back to legacy start queue RPC args when 3-arg RPC is unavailable", async () => {
     getSupabaseAdminClient.mockReturnValue(
       createSupabaseMock({
@@ -594,6 +643,71 @@ describe("matching service", () => {
       p_participant_id: "participant-1",
       p_opponent_participant_id: "participant-2",
       p_table_id: "table-1",
+    });
+  });
+
+  it("passes a random available table to tryCreateNextMatch", async () => {
+    getSupabaseAdminClient.mockReturnValue(
+      createSupabaseMock({
+        events: [createEventRow()],
+        participants: [
+          createParticipantRow({
+            id: "participant-1",
+            nickname: "Alice",
+            status: "queueing",
+            last_non_disconnect_status: "queueing",
+            queued_at: "2026-04-12T09:00:00.000Z",
+          }),
+          createParticipantRow({
+            id: "participant-2",
+            nickname: "Bob",
+            status: "queueing",
+            last_non_disconnect_status: "queueing",
+            queued_at: "2026-04-12T09:01:00.000Z",
+          }),
+        ],
+        tables: [
+          createTableRow({
+            id: "table-1",
+            table_number: 1,
+          }),
+          createTableRow({
+            id: "table-2",
+            table_number: 2,
+          }),
+        ],
+        matches: [
+          createMatchRow({
+            id: "match-2",
+            table_id: "table-2",
+            player1_participant_id: "participant-1",
+            player2_participant_id: "participant-2",
+          }),
+        ],
+      }),
+    );
+    rpc.mockResolvedValue({
+      data: [
+        {
+          match_id: "match-2",
+          participant_status: "match_reserved",
+        },
+      ],
+      error: null,
+    });
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.99);
+
+    await expect(tryCreateNextMatch("event-1")).resolves.toMatchObject({
+      id: "match-2",
+      table_id: "table-2",
+      player1_participant_id: "participant-1",
+      player2_participant_id: "participant-2",
+    });
+
+    expect(rpc).toHaveBeenCalledWith("start_queue_and_try_match", {
+      p_participant_id: "participant-1",
+      p_opponent_participant_id: "participant-2",
+      p_table_id: "table-2",
     });
   });
 
