@@ -1,5 +1,6 @@
 import type { AdminMatchListItem } from "@/lib/contracts/admin-matches";
 import type { AdminTableListItem } from "@/lib/contracts/admin-tables";
+import type { GameRuleDetail } from "@/lib/contracts/game-rules";
 import { getSupabaseAdminClient } from "@/lib/db/server";
 import type { Database } from "@/lib/db/types";
 import { AppError, DomainConflictError } from "@/lib/domain/errors";
@@ -7,6 +8,7 @@ import { AppError, DomainConflictError } from "@/lib/domain/errors";
 type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
 type TableRow = Database["public"]["Tables"]["tables"]["Row"];
+type GameRuleRow = Database["public"]["Tables"]["game_rules"]["Row"];
 type AdminUserRow = Database["public"]["Tables"]["admin_users"]["Row"];
 
 type ForceReleaseTableRpcArgs = Database["public"]["Functions"]["force_release_table"]["Args"];
@@ -62,14 +64,39 @@ type TablesUpdateQuery = {
 
 type TablesQuery = TableQuery<TableRow> & {
   update(
-    values: Pick<Database["public"]["Tables"]["tables"]["Update"], "game_title">,
+    values: Pick<Database["public"]["Tables"]["tables"]["Update"], "game_title" | "game_rule_id">,
   ): TablesUpdateQuery;
+};
+
+type GameRulesUpdateQuery = {
+  eq(
+    column: "id",
+    value: string,
+  ): {
+    select(columns: string): {
+      maybeSingle(): QueryResult<GameRuleRow | null>;
+    };
+  };
+};
+
+type GameRulesQuery = TableQuery<GameRuleRow> & {
+  insert(
+    values: Database["public"]["Tables"]["game_rules"]["Insert"],
+  ): {
+    select(columns: string): {
+      maybeSingle(): QueryResult<GameRuleRow | null>;
+    };
+  };
+  update(
+    values: Pick<Database["public"]["Tables"]["game_rules"]["Update"], "title" | "body">,
+  ): GameRulesUpdateQuery;
 };
 
 type AdminMatchSupabaseClient = {
   from(table: "participants"): TableQuery<ParticipantRow>;
   from(table: "matches"): TableQuery<MatchRow>;
   from(table: "tables"): TablesQuery;
+  from(table: "game_rules"): GameRulesQuery;
   from(table: "admin_users"): TableQuery<AdminUserRow>;
   rpc(
     fn: "force_release_table",
@@ -167,6 +194,21 @@ async function fetchAdminUsers(adminUserIds: string[]): Promise<Map<string, Admi
   return new Map((data ?? []).map((user) => [user.id, user]));
 }
 
+async function fetchGameRules(ruleIds: string[]): Promise<Map<string, GameRuleRow>> {
+  if (ruleIds.length === 0) {
+    return new Map();
+  }
+
+  const gameRules = getAdminMatchSupabaseClient().from("game_rules");
+  const { data, error } = await gameRules.select("*").in("id", ruleIds).limit(1000);
+
+  if (error) {
+    throw new AppError("game_rule_lookup_failed", "Failed to load game rules.", 500);
+  }
+
+  return new Map((data ?? []).map((rule) => [rule.id, rule]));
+}
+
 async function fetchTableById(tableId: string): Promise<TableRow> {
   const tables = getAdminMatchSupabaseClient().from("tables");
   const { data, error } = await tables.select("*").eq("id", tableId).maybeSingle();
@@ -226,6 +268,30 @@ function normalizeTableGameTitle(value: string): string {
     "Table game title is required.",
     400,
   );
+}
+
+function normalizeGameRuleTitle(value: string): string {
+  const normalized = value.trim();
+
+  if (normalized.length === 0) {
+    throw new AppError("game_rule_title_required", "Game rule title is required.", 400);
+  }
+
+  if (normalized.length > 120) {
+    throw new AppError("game_rule_title_too_long", "Game rule title is too long.", 400);
+  }
+
+  return normalized;
+}
+
+function normalizeGameRuleBody(value: string): string {
+  const normalized = value.trim();
+
+  if (normalized.length === 0) {
+    throw new AppError("game_rule_body_required", "Game rule body is required.", 400);
+  }
+
+  return normalized;
 }
 
 function normalizeForceReleaseError(message: string): never {
@@ -358,6 +424,11 @@ export async function listAdminTables(eventId: string): Promise<AdminTableListIt
       .map((table) => table.held_by_admin_user_id)
       .filter((adminUserId): adminUserId is string => typeof adminUserId === "string"),
   );
+  const gameRulesById = await fetchGameRules(
+    tables
+      .map((table) => table.game_rule_id)
+      .filter((ruleId): ruleId is string => typeof ruleId === "string"),
+  );
 
   return tables.map((table) => {
     const currentMatch = table.current_match_id
@@ -374,6 +445,9 @@ export async function listAdminTables(eventId: string): Promise<AdminTableListIt
       tableId: table.id,
       tableNumber: table.table_number,
       gameTitle: table.game_title,
+      ruleId: table.game_rule_id,
+      ruleTitle: table.game_rule_id ? (gameRulesById.get(table.game_rule_id)?.title ?? null) : null,
+      hasRule: table.game_rule_id !== null && gameRulesById.has(table.game_rule_id),
       status: table.status,
       currentMatchId: table.current_match_id,
       occupantNicknames,
@@ -419,6 +493,101 @@ export async function updateTableGameTitle(params: {
     tableId: table.id,
     participantIds: currentMatch ? getMatchParticipantIds(currentMatch) : [],
     includeRanking: false,
+  };
+}
+
+export async function updateTableRule(params: {
+  tableId: string;
+  title: string;
+  body: string;
+}): Promise<AdminMatchMutationResult> {
+  const title = normalizeGameRuleTitle(params.title);
+  const body = normalizeGameRuleBody(params.body);
+  const table = await fetchTableById(params.tableId);
+  const currentMatch = table.current_match_id ? await fetchMatchById(table.current_match_id) : null;
+  const gameRules = getAdminMatchSupabaseClient().from("game_rules");
+
+  let rule: GameRuleRow | null = null;
+
+  if (table.game_rule_id) {
+    const { data, error } = await gameRules
+      .update({
+        title,
+        body,
+      })
+      .eq("id", table.game_rule_id)
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      throw new AppError("game_rule_update_failed", "Failed to update game rule.", 500);
+    }
+
+    rule = data;
+  } else {
+    const { data, error } = await gameRules
+      .insert({
+        event_id: table.event_id,
+        title,
+        body,
+      })
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      throw new AppError("game_rule_create_failed", "Failed to create game rule.", 500);
+    }
+
+    rule = data;
+  }
+
+  if (!rule) {
+    throw new AppError("game_rule_write_failed", "Game rule write returned no result.", 500);
+  }
+
+  if (!table.game_rule_id) {
+    const tables = getAdminMatchSupabaseClient().from("tables");
+    const { error } = await tables
+      .update({
+        game_rule_id: rule.id,
+      })
+      .eq("id", table.id)
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      throw new AppError("table_rule_assign_failed", "Failed to assign game rule to table.", 500);
+    }
+  }
+
+  return {
+    eventId: table.event_id,
+    matchId: currentMatch?.id ?? null,
+    tableId: table.id,
+    participantIds: currentMatch ? getMatchParticipantIds(currentMatch) : [],
+    includeRanking: false,
+  };
+}
+
+export async function getAdminTableRule(tableId: string): Promise<GameRuleDetail | null> {
+  const table = await fetchTableById(tableId);
+
+  if (!table.game_rule_id) {
+    return null;
+  }
+
+  const gameRules = await fetchGameRules([table.game_rule_id]);
+  const rule = gameRules.get(table.game_rule_id);
+
+  if (!rule) {
+    throw new AppError("game_rule_not_found", "Game rule was not found.", 404);
+  }
+
+  return {
+    id: rule.id,
+    title: rule.title,
+    body: rule.body,
+    updatedAt: rule.updated_at,
   };
 }
 

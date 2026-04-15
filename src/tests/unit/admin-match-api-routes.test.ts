@@ -9,6 +9,8 @@ const {
   holdTable,
   releaseTableHold,
   updateTableGameTitle,
+  updateTableRule,
+  getAdminTableRule,
   resolveMatchByAdmin,
   startStaffMatch,
   resolveStaffMatch,
@@ -22,6 +24,8 @@ const {
   holdTable: vi.fn(),
   releaseTableHold: vi.fn(),
   updateTableGameTitle: vi.fn(),
+  updateTableRule: vi.fn(),
+  getAdminTableRule: vi.fn(),
   resolveMatchByAdmin: vi.fn(),
   startStaffMatch: vi.fn(),
   resolveStaffMatch: vi.fn(),
@@ -43,6 +47,8 @@ vi.mock("@/lib/services/admin-match-service", () => ({
   holdTable,
   releaseTableHold,
   updateTableGameTitle,
+  updateTableRule,
+  getAdminTableRule,
   resolveMatchByAdmin,
 }));
 
@@ -63,6 +69,10 @@ import { POST as startStaffMatchPost } from "@/app/api/admin/staff-match/start/r
 import { GET as getAdminTables } from "@/app/api/admin/tables/route";
 import { POST as forceReleaseTablePost } from "@/app/api/admin/table/force-release/route";
 import { POST as updateTableGameTitlePost } from "@/app/api/admin/table/game-title/route";
+import {
+  GET as getTableRuleRoute,
+  POST as updateTableRulePost,
+} from "@/app/api/admin/table/rule/route";
 import { POST as holdTablePost } from "@/app/api/admin/table/hold/route";
 import { POST as releaseTableHoldPost } from "@/app/api/admin/table/release-hold/route";
 
@@ -238,6 +248,61 @@ describe("admin match and table api routes", () => {
     expect(response.status).toBe(400);
     expect(updateTableGameTitle).not.toHaveBeenCalled();
     expect(publishInvalidation).not.toHaveBeenCalled();
+  });
+
+  it("reads and updates table rules through the admin route", async () => {
+    getAdminTableRule.mockResolvedValue({
+      id: "rule-1",
+      title: "Smash Bros ルール",
+      body: "body",
+      updatedAt: "2026-04-12T01:15:00.000Z",
+    });
+    updateTableRule.mockResolvedValue({
+      eventId: "event-1",
+      matchId: "match-1",
+      tableId: "table-1",
+      participantIds: ["participant-1", "participant-2"],
+      includeRanking: false,
+    });
+
+    const getResponse = await getTableRuleRoute(
+      new Request("http://localhost/api/admin/table/rule?tableId=table-1"),
+    );
+    const postResponse = await updateTableRulePost(
+      new Request("http://localhost/api/admin/table/rule", {
+        method: "POST",
+        body: JSON.stringify({
+          tableId: "table-1",
+          title: "Smash Bros ルール",
+          body: "body",
+        }),
+      }),
+    );
+
+    await expect(getResponse.json()).resolves.toEqual({
+      data: {
+        id: "rule-1",
+        title: "Smash Bros ルール",
+        body: "body",
+        updatedAt: "2026-04-12T01:15:00.000Z",
+      },
+    });
+    await expect(postResponse.json()).resolves.toEqual({
+      data: { ok: true },
+    });
+    expect(getAdminTableRule).toHaveBeenCalledWith("table-1");
+    expect(updateTableRule).toHaveBeenCalledWith({
+      tableId: "table-1",
+      title: "Smash Bros ルール",
+      body: "body",
+    });
+    expect(publishInvalidation).toHaveBeenCalledWith({
+      eventId: "event-1",
+      scopes: ["participant", "match", "admin"],
+      participantIds: ["participant-1", "participant-2"],
+      matchId: "match-1",
+      tableId: "table-1",
+    });
   });
 
   it("publishes participant, match, and admin invalidation for force release when a match is affected", async () => {

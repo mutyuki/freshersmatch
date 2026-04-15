@@ -81,6 +81,7 @@ function createTableRow(
     event_id: overrides.event_id,
     table_number: overrides.table_number,
     game_title: overrides.game_title,
+    game_rule_id: overrides.game_rule_id ?? null,
     status: overrides.status ?? "available",
     current_match_id: overrides.current_match_id ?? null,
     held_by_admin_user_id: overrides.held_by_admin_user_id ?? null,

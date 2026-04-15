@@ -127,6 +127,7 @@ export interface Database {
           event_id: string;
           table_number: number;
           game_title: string;
+          game_rule_id: string | null;
           status: TableStatus;
           current_match_id: string | null;
           held_by_admin_user_id: string | null;
@@ -138,6 +139,7 @@ export interface Database {
           event_id: string;
           table_number: number;
           game_title: string;
+          game_rule_id?: string | null;
           status?: TableStatus;
           current_match_id?: string | null;
           held_by_admin_user_id?: string | null;
@@ -145,6 +147,25 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["tables"]["Insert"]>;
+      };
+      game_rules: {
+        Row: {
+          id: string;
+          event_id: string;
+          title: string;
+          body: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          title: string;
+          body: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["game_rules"]["Insert"]>;
       };
       matches: {
         Row: {

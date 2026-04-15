@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const replace = vi.fn();
 const push = vi.fn();
 const useParticipantRuntime = vi.fn();
+const fetchMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -42,7 +43,9 @@ describe("participant home page", () => {
     replace.mockReset();
     push.mockReset();
     useParticipantRuntime.mockReset();
+    fetchMock.mockReset();
     vi.restoreAllMocks();
+    vi.stubGlobal("fetch", fetchMock);
   });
 
   it("shows a loading message while runtime is being restored", () => {
@@ -91,8 +94,82 @@ describe("participant home page", () => {
 
     expect(screen.getByText("ランキングを見る")).toBeInTheDocument();
     expect(screen.getByText("マッチングを開始する")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "ゲームルールを見る" })).toBeInTheDocument();
     expect(screen.getAllByText("参加登録済み")).toHaveLength(1);
     expect(screen.getByText("12")).toBeInTheDocument();
+  });
+
+  it("opens the game rule list and requests rule data", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem("freshers-match.participant-session-token", "session-token");
+    useParticipantRuntime.mockReturnValue({
+      state: {
+        participantId: "participant-1",
+        eventId: "event-1",
+        nickname: "Alice",
+        status: "registered",
+        lastNonDisconnectStatus: null,
+        chipBalance: 12,
+        currentMatchId: null,
+        queuedAt: null,
+        table: null,
+        match: null,
+        opponent: null,
+        turnRole: null,
+        opponentReady: false,
+        winnerParticipantId: null,
+        winnerClaimedByParticipantId: null,
+        disqualifiedReason: null,
+        resultDelta: null,
+        resultConfirmedAt: null,
+        canStartMatching: true,
+        canClaimWin: false,
+      },
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              tableId: "table-1",
+              tableNumber: 1,
+              gameTitle: "Tekken 8",
+              ruleTitle: "鉄拳ルール",
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            tableId: "table-1",
+            tableNumber: 1,
+            gameTitle: "Tekken 8",
+            rule: {
+              id: "rule-1",
+              title: "鉄拳ルール",
+              body: "1. 3本先取",
+              updatedAt: "2026-04-12T01:15:00.000Z",
+            },
+          },
+        }),
+      });
+
+    render(<HomePage />);
+
+    await user.click(screen.getByRole("button", { name: "ゲームルールを見る" }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/participant/rules", {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      });
+    });
   });
 
   it("shows a disabled reason when the participant cannot start matching", () => {

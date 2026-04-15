@@ -1,10 +1,12 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
 
 const replace = vi.fn();
 const useParticipantRuntime = vi.fn();
+const fetchMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -46,6 +48,7 @@ function createRuntime(
             id: "table-1",
             tableNumber: 3,
             gameTitle: "Smash Bros",
+            ruleId: "rule-1",
             status: "reserved" as const,
           },
     match:
@@ -95,8 +98,25 @@ function createRuntime(
 
 describe("participant match page", () => {
   beforeEach(() => {
+    const store = new Map<string, string>();
+
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        setItem: vi.fn((key: string, value: string) => {
+          store.set(key, value);
+        }),
+        removeItem: vi.fn((key: string) => {
+          store.delete(key);
+        }),
+      },
+    });
+
     replace.mockReset();
     useParticipantRuntime.mockReset();
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
   });
 
   it("shows a loading message while runtime is being restored", () => {
@@ -137,6 +157,45 @@ describe("participant match page", () => {
     expect(screen.getByText("3 卓")).toBeInTheDocument();
     expect(screen.getByText("Sora")).toBeInTheDocument();
     expect(screen.getByText("あなたは先攻です")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "この卓のルールを見る" })).toBeInTheDocument();
+  });
+
+  it("requests the current table rule when the drawer trigger is pressed", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem("freshers-match.participant-session-token", "session-token");
+    useParticipantRuntime.mockReturnValue({
+      state: createRuntime("playing"),
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          tableId: "table-1",
+          tableNumber: 3,
+          gameTitle: "Smash Bros",
+          rule: {
+            id: "rule-1",
+            title: "Smash Bros ルール",
+            body: "1. 2本先取",
+            updatedAt: "2026-04-12T01:15:00.000Z",
+          },
+        },
+      }),
+    });
+
+    render(<MatchPage />);
+
+    await user.click(screen.getByRole("button", { name: "この卓のルールを見る" }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/participant/current-rule", {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      });
+    });
   });
 
   it("renders the ready-state variant inside the match reserved panel", () => {
@@ -162,7 +221,7 @@ describe("participant match page", () => {
 
     render(<MatchPage />);
 
-    expect(screen.getByText("対戦中です")).toBeInTheDocument();
+    expect(screen.getByText("対戦中")).toBeInTheDocument();
     expect(screen.getByText("あなたは先攻です")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "勝利を申告する" })).toBeInTheDocument();
   });

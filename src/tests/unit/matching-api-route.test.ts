@@ -130,6 +130,7 @@ describe("matching api routes", () => {
         id: "table-1",
         tableNumber: 2,
         gameTitle: "Smash Bros",
+        ruleId: "rule-1",
         status: "reserved",
       },
       opponent: {

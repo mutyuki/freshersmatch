@@ -4,6 +4,9 @@ const {
   registerParticipant,
   restoreParticipantSession,
   getParticipantRuntimeState,
+  getParticipantCurrentRule,
+  listParticipantGameRules,
+  getParticipantRuleByTableId,
   heartbeatParticipant,
   acknowledgeResultConfirmed,
   touchParticipantSession,
@@ -13,6 +16,9 @@ const {
   registerParticipant: vi.fn(),
   restoreParticipantSession: vi.fn(),
   getParticipantRuntimeState: vi.fn(),
+  getParticipantCurrentRule: vi.fn(),
+  listParticipantGameRules: vi.fn(),
+  getParticipantRuleByTableId: vi.fn(),
   heartbeatParticipant: vi.fn(),
   acknowledgeResultConfirmed: vi.fn(),
   touchParticipantSession: vi.fn(),
@@ -24,6 +30,9 @@ vi.mock("@/lib/services/participant-service", () => ({
   registerParticipant,
   restoreParticipantSession,
   getParticipantRuntimeState,
+  getParticipantCurrentRule,
+  listParticipantGameRules,
+  getParticipantRuleByTableId,
   heartbeatParticipant,
 }));
 
@@ -42,7 +51,9 @@ vi.mock("@/lib/realtime/publisher", () => ({
 
 import { AppError } from "@/lib/domain/errors";
 import { POST as heartbeatParticipantPost } from "@/app/api/participant/heartbeat/route";
+import { GET as getParticipantCurrentRuleRoute } from "@/app/api/participant/current-rule/route";
 import { GET as getParticipantMe } from "@/app/api/participant/me/route";
+import { GET as getParticipantRulesRoute } from "@/app/api/participant/rules/route";
 import { POST as acknowledgeResultPost } from "@/app/api/participant/result/ack/route";
 import { POST as registerParticipantPost } from "@/app/api/participant/register/route";
 import { POST as restoreParticipantSessionPost } from "@/app/api/participant/session/restore/route";
@@ -233,6 +244,119 @@ describe("participant api routes", () => {
     expect(response.status).toBe(200);
     expect(touchParticipantSession).toHaveBeenCalledWith("session-1");
     expect(getParticipantRuntimeState).toHaveBeenCalledWith("participant-1");
+  });
+
+  it("returns current rule data for the active table", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    touchParticipantSession.mockResolvedValue(undefined);
+    getParticipantCurrentRule.mockResolvedValue({
+      tableId: "table-1",
+      tableNumber: 3,
+      gameTitle: "Smash Bros",
+      rule: {
+        id: "rule-1",
+        title: "Smash Bros ルール",
+        body: "対戦ルール本文",
+        updatedAt: "2026-04-12T01:15:00.000Z",
+      },
+    });
+
+    const response = await getParticipantCurrentRuleRoute(
+      new Request("http://localhost/api/participant/current-rule", {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        tableId: "table-1",
+        tableNumber: 3,
+        gameTitle: "Smash Bros",
+        rule: {
+          id: "rule-1",
+          title: "Smash Bros ルール",
+          body: "対戦ルール本文",
+          updatedAt: "2026-04-12T01:15:00.000Z",
+        },
+      },
+    });
+    expect(getParticipantCurrentRule).toHaveBeenCalledWith("participant-1");
+  });
+
+  it("returns rule list or a specific table rule from participant rules route", async () => {
+    verifyParticipantSession.mockResolvedValue({
+      participantId: "participant-1",
+      sessionId: "session-1",
+    });
+    touchParticipantSession.mockResolvedValue(undefined);
+    listParticipantGameRules.mockResolvedValue([
+      {
+        tableId: "table-1",
+        tableNumber: 1,
+        gameTitle: "Tekken 8",
+        ruleTitle: "鉄拳ルール",
+      },
+    ]);
+    getParticipantRuleByTableId.mockResolvedValue({
+      tableId: "table-1",
+      tableNumber: 1,
+      gameTitle: "Tekken 8",
+      rule: {
+        id: "rule-1",
+        title: "鉄拳ルール",
+        body: "body",
+        updatedAt: "2026-04-12T01:15:00.000Z",
+      },
+    });
+
+    const listResponse = await getParticipantRulesRoute(
+      new Request("http://localhost/api/participant/rules", {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      }),
+    );
+    const detailResponse = await getParticipantRulesRoute(
+      new Request("http://localhost/api/participant/rules?tableId=table-1", {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer session-token",
+        },
+      }),
+    );
+
+    await expect(listResponse.json()).resolves.toEqual({
+      data: [
+        {
+          tableId: "table-1",
+          tableNumber: 1,
+          gameTitle: "Tekken 8",
+          ruleTitle: "鉄拳ルール",
+        },
+      ],
+    });
+    await expect(detailResponse.json()).resolves.toEqual({
+      data: {
+        tableId: "table-1",
+        tableNumber: 1,
+        gameTitle: "Tekken 8",
+        rule: {
+          id: "rule-1",
+          title: "鉄拳ルール",
+          body: "body",
+          updatedAt: "2026-04-12T01:15:00.000Z",
+        },
+      },
+    });
+    expect(listParticipantGameRules).toHaveBeenCalledWith("participant-1");
+    expect(getParticipantRuleByTableId).toHaveBeenCalledWith("participant-1", "table-1");
   });
 
   it("accepts heartbeat requests that only send bearer authorization", async () => {

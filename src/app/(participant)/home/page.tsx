@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GameRulesDrawer } from "@/components/participant/game-rules-drawer";
 import { useParticipantHeartbeat } from "@/hooks/useParticipantHeartbeat";
 import { useParticipantRuntime } from "@/hooks/useParticipantRuntime";
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
@@ -232,6 +233,12 @@ export default function HomePage(): JSX.Element {
                     <AlertDescription>{startError}</AlertDescription>
                   </Alert>
                 ) : null}
+
+                <GameRulesDrawer
+                  mode="list"
+                  triggerLabel="ゲームルールを見る"
+                  className="h-12 w-full"
+                />
               </section>
 
               <Link href="/ranking">

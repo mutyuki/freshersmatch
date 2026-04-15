@@ -17,9 +17,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAdminTablesRealtime } from "@/hooks/useAdminTablesRealtime";
 import type { AdminTableListItem } from "@/lib/contracts/admin-tables";
+import type { GameRuleDetail } from "@/lib/contracts/game-rules";
 import type { TableStatus } from "@/lib/domain/table-status";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +41,7 @@ type TableResponse = {
 };
 
 type MutationResponse = {
+  data?: GameRuleDetail | null;
   error?: {
     message?: string;
   };
@@ -46,6 +57,12 @@ type ActionState =
   | { type: "hold"; tableId: string }
   | { type: "release-hold"; tableId: string }
   | null;
+
+type RuleDialogState = {
+  tableId: string;
+  title: string;
+  body: string;
+} | null;
 
 const tableStatusConfig: Record<TableStatus, { label: string; className: string }> = {
   available: {
@@ -97,6 +114,10 @@ export function TableGrid(props: TableGridProps): JSX.Element {
     tableId: string;
     message: string;
   } | null>(null);
+  const [ruleDialogState, setRuleDialogState] = useState<RuleDialogState>(null);
+  const [isLoadingRule, setIsLoadingRule] = useState(false);
+  const [isSavingRule, setIsSavingRule] = useState(false);
+  const [ruleErrorMessage, setRuleErrorMessage] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -219,6 +240,99 @@ export function TableGrid(props: TableGridProps): JSX.Element {
       setSubmittingTableId(null);
     }
   }, [actionState, refresh, selectedTable]);
+
+  const openRuleDialog = useCallback(
+    async (table: AdminTableListItem): Promise<void> => {
+      setRuleDialogState({
+        tableId: table.tableId,
+        title: table.ruleTitle ?? table.gameTitle,
+        body: "",
+      });
+      setRuleErrorMessage(null);
+
+      if (!table.hasRule) {
+        return;
+      }
+
+      setIsLoadingRule(true);
+      try {
+        const response = await fetch(
+          `/api/admin/table/rule?tableId=${encodeURIComponent(table.tableId)}`,
+          {
+            method: "GET",
+          },
+        );
+        const payload = (await response.json().catch(() => null)) as MutationResponse | null;
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.error?.message ?? "ルール詳細の取得に失敗しました。少し待ってから再度お試しください。",
+          );
+        }
+
+        setRuleDialogState({
+          tableId: table.tableId,
+          title: payload?.data?.title ?? table.ruleTitle ?? table.gameTitle,
+          body: payload?.data?.body ?? "",
+        });
+      } catch (error) {
+        setRuleErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "ルール詳細の取得に失敗しました。少し待ってから再度お試しください。",
+        );
+      } finally {
+        setIsLoadingRule(false);
+      }
+    },
+    [],
+  );
+
+  const saveRule = useCallback(async (): Promise<void> => {
+    if (!ruleDialogState) {
+      return;
+    }
+
+    setIsSavingRule(true);
+    setRuleErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/table/rule", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId: ruleDialogState.tableId,
+          title: ruleDialogState.title,
+          body: ruleDialogState.body,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as MutationResponse | null;
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error?.message ?? "ルール保存に失敗しました。少し待ってから再度お試しください。",
+        );
+      }
+
+      await refresh();
+      setRuleDialogState(null);
+    } catch (error) {
+      setRuleErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "ルール保存に失敗しました。少し待ってから再度お試しください。",
+      );
+    } finally {
+      setIsSavingRule(false);
+    }
+  }, [refresh, ruleDialogState]);
+
+  const selectedRuleTable = useMemo(
+    () => (ruleDialogState ? data.find((table) => table.tableId === ruleDialogState.tableId) ?? null : null),
+    [data, ruleDialogState],
+  );
 
   const updateGameTitle = useCallback(
     async (tableId: string): Promise<void> => {
@@ -389,6 +503,12 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Rule
+                    </p>
+                    <p className="mt-1">{table.hasRule ? (table.ruleTitle ?? "設定済み") : "ルール未設定"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                       Held by
                     </p>
                     <p className="mt-1">{table.heldByAdminDisplayName ?? "未保持"}</p>
@@ -405,6 +525,14 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                 ) : null}
 
                 <div className="mt-5 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isSubmitting || isLoadingRule || isSavingRule}
+                    onClick={() => void openRuleDialog(table)}
+                  >
+                    {table.hasRule ? "ルール編集" : "ルール追加"}
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -558,6 +686,97 @@ export function TableGrid(props: TableGridProps): JSX.Element {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={ruleDialogState !== null}
+        onOpenChange={(open) => {
+          if (!open && !isSavingRule) {
+            setRuleDialogState(null);
+            setRuleErrorMessage(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedRuleTable ? `卓 ${selectedRuleTable.tableNumber} のルール編集` : "卓ルール編集"}
+            </DialogTitle>
+            <DialogDescription>
+              卓タイトルとは別に、この卓専用の説明文を保存します。参加者は対戦中とホームから確認できます。
+            </DialogDescription>
+          </DialogHeader>
+
+          {ruleErrorMessage ? (
+            <Alert variant="destructive">
+              <AlertDescription>{ruleErrorMessage}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">ルール名</p>
+              <Input
+                value={ruleDialogState?.title ?? ""}
+                onChange={(event) =>
+                  setRuleDialogState((previous) =>
+                    previous
+                      ? {
+                          ...previous,
+                          title: event.currentTarget.value,
+                        }
+                      : previous,
+                  )
+                }
+                disabled={isLoadingRule || isSavingRule}
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">ルール本文</p>
+              <Textarea
+                value={ruleDialogState?.body ?? ""}
+                onChange={(event) =>
+                  setRuleDialogState((previous) =>
+                    previous
+                      ? {
+                          ...previous,
+                          body: event.currentTarget.value,
+                        }
+                      : previous,
+                  )
+                }
+                disabled={isLoadingRule || isSavingRule}
+                rows={10}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSavingRule}
+              onClick={() => {
+                setRuleDialogState(null);
+                setRuleErrorMessage(null);
+              }}
+            >
+              閉じる
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                isLoadingRule ||
+                isSavingRule ||
+                !ruleDialogState?.title.trim() ||
+                !ruleDialogState.body.trim()
+              }
+              onClick={() => void saveRule()}
+            >
+              {isSavingRule ? "保存中..." : "ルール保存"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -26,6 +26,7 @@ import {
 type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
 type TableRow = Database["public"]["Tables"]["tables"]["Row"];
+type GameRuleRow = Database["public"]["Tables"]["game_rules"]["Row"];
 type AdminUserRow = Database["public"]["Tables"]["admin_users"]["Row"];
 
 function createParticipantRow(
@@ -90,9 +91,23 @@ function createTableRow(
     event_id: overrides.event_id,
     table_number: overrides.table_number,
     game_title: overrides.game_title,
+    game_rule_id: overrides.game_rule_id ?? null,
     status: overrides.status ?? "available",
     current_match_id: overrides.current_match_id ?? null,
     held_by_admin_user_id: overrides.held_by_admin_user_id ?? null,
+    created_at: overrides.created_at ?? "2026-04-13T08:00:00.000Z",
+    updated_at: overrides.updated_at ?? "2026-04-13T09:00:00.000Z",
+  };
+}
+
+function createGameRuleRow(
+  overrides: Partial<GameRuleRow> & Pick<GameRuleRow, "id" | "event_id" | "title" | "body">,
+): GameRuleRow {
+  return {
+    id: overrides.id,
+    event_id: overrides.event_id,
+    title: overrides.title,
+    body: overrides.body,
     created_at: overrides.created_at ?? "2026-04-13T08:00:00.000Z",
     updated_at: overrides.updated_at ?? "2026-04-13T09:00:00.000Z",
   };
@@ -195,12 +210,21 @@ describe("admin match service", () => {
         event_id: "event-1",
         table_number: 1,
         game_title: "Tekken 8",
+        game_rule_id: "rule-1",
         status: "admin_hold",
         current_match_id: "match-1",
         held_by_admin_user_id: "admin-1",
       }),
     ];
     const adminUsers = [createAdminUserRow({ id: "admin-1", display_name: "Desk A" })];
+    const gameRules = [
+      createGameRuleRow({
+        id: "rule-1",
+        event_id: "event-1",
+        title: "鉄拳ルール",
+        body: "body",
+      }),
+    ];
 
     from.mockImplementation((tableName: string) => ({
       select: () => ({
@@ -212,14 +236,16 @@ describe("admin match service", () => {
                   ? participants
                   : tableName === "matches"
                     ? matches
-                    : tables,
+                    : tableName === "tables"
+                      ? tables
+                      : [],
               error: null,
             }),
           }),
         }),
         in: () => ({
           limit: async () => ({
-            data: adminUsers,
+            data: tableName === "admin_users" ? adminUsers : gameRules,
             error: null,
           }),
         }),
@@ -231,6 +257,9 @@ describe("admin match service", () => {
         tableId: "table-1",
         tableNumber: 1,
         gameTitle: "Tekken 8",
+        ruleId: "rule-1",
+        ruleTitle: "鉄拳ルール",
+        hasRule: true,
         status: "admin_hold",
         currentMatchId: "match-1",
         occupantNicknames: ["Alice", "Bob"],

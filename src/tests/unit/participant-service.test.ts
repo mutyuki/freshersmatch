@@ -22,6 +22,12 @@ const {
   tablesSelect,
   tablesEq,
   tablesMaybeSingle,
+  tablesLimit,
+  gameRulesSelect,
+  gameRulesEq,
+  gameRulesMaybeSingle,
+  gameRulesIn,
+  gameRulesLimit,
   chipLedgerSelect,
   chipLedgerEq,
   chipLedgerNestedEq,
@@ -47,6 +53,12 @@ const {
   tablesSelect: vi.fn(),
   tablesEq: vi.fn(),
   tablesMaybeSingle: vi.fn(),
+  tablesLimit: vi.fn(),
+  gameRulesSelect: vi.fn(),
+  gameRulesEq: vi.fn(),
+  gameRulesMaybeSingle: vi.fn(),
+  gameRulesIn: vi.fn(),
+  gameRulesLimit: vi.fn(),
   chipLedgerSelect: vi.fn(),
   chipLedgerEq: vi.fn(),
   chipLedgerNestedEq: vi.fn(),
@@ -80,6 +92,7 @@ import {
 type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
 type TableRow = Database["public"]["Tables"]["tables"]["Row"];
+type GameRuleRow = Database["public"]["Tables"]["game_rules"]["Row"];
 type ChipLedgerRow = Database["public"]["Tables"]["chip_ledger"]["Row"];
 
 const baseParticipant: ParticipantRow = {
@@ -130,9 +143,19 @@ const table: TableRow = {
   event_id: "event-1",
   table_number: 3,
   game_title: "Smash Bros",
+  game_rule_id: "rule-1",
   status: "reserved",
   current_match_id: "match-1",
   held_by_admin_user_id: null,
+  created_at: "2026-04-10T08:00:00.000Z",
+  updated_at: "2026-04-10T09:00:00.000Z",
+};
+
+const gameRule: GameRuleRow = {
+  id: "rule-1",
+  event_id: "event-1",
+  title: "Smash Bros ルール",
+  body: "対戦ルール本文",
   created_at: "2026-04-10T08:00:00.000Z",
   updated_at: "2026-04-10T09:00:00.000Z",
 };
@@ -181,6 +204,12 @@ describe("participant service", () => {
         };
       }
 
+      if (tableName === "game_rules") {
+        return {
+          select: gameRulesSelect,
+        };
+      }
+
       throw new Error(`Unexpected table: ${tableName}`);
     });
 
@@ -211,6 +240,18 @@ describe("participant service", () => {
     });
     tablesEq.mockReturnValue({
       maybeSingle: tablesMaybeSingle,
+      limit: tablesLimit,
+    });
+
+    gameRulesSelect.mockReturnValue({
+      eq: gameRulesEq,
+      in: gameRulesIn,
+    });
+    gameRulesEq.mockReturnValue({
+      maybeSingle: gameRulesMaybeSingle,
+    });
+    gameRulesIn.mockReturnValue({
+      limit: gameRulesLimit,
     });
 
     chipLedgerSelect.mockReturnValue({
@@ -225,6 +266,14 @@ describe("participant service", () => {
     touchParticipantSession.mockResolvedValue(undefined);
     normalizeParticipantConnectionState.mockResolvedValue(undefined);
     restoreDisconnectedParticipantIfNeeded.mockResolvedValue(false);
+    gameRulesMaybeSingle.mockResolvedValue({
+      data: gameRule,
+      error: null,
+    });
+    gameRulesLimit.mockResolvedValue({
+      data: [gameRule],
+      error: null,
+    });
   });
 
   it("registers a participant through the RPC and returns the participant row with the raw token", async () => {
@@ -472,6 +521,7 @@ describe("participant service", () => {
         id: "table-1",
         tableNumber: 3,
         gameTitle: "Smash Bros",
+        ruleId: "rule-1",
         status: "reserved",
       },
       opponent: {

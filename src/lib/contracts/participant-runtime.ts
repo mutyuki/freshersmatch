@@ -6,6 +6,7 @@ export interface ParticipantRuntimeTable {
   id: string;
   tableNumber: number;
   gameTitle: string;
+  ruleId: string | null;
   status: TableStatus;
 }
 

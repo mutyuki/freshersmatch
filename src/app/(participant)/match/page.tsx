@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type JSX } from "react";
 import { useRouter } from "next/navigation";
 
+import { GameRulesDrawer } from "@/components/participant/game-rules-drawer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -245,6 +246,12 @@ export default function MatchPage(): JSX.Element {
                     </div>
                   ) : null}
                 </div>
+                <GameRulesDrawer
+                  mode="current"
+                  triggerLabel="この卓のルールを見る"
+                  disabled={!resolvedRuntime.table}
+                  className="h-12 w-full"
+                />
                 <Button
                   type="button"
                   size="lg"
@@ -329,6 +336,12 @@ export default function MatchPage(): JSX.Element {
                     </div>
                   ) : null}
                 </div>
+                <GameRulesDrawer
+                  mode="current"
+                  triggerLabel="この卓のルールを見る"
+                  disabled={!resolvedRuntime.table}
+                  className="h-12 w-full"
+                />
                 {!resolvedRuntime.match?.isStaffMatch ? (
                   <Button
                     type="button"

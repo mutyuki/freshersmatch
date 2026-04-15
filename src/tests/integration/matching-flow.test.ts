@@ -125,6 +125,7 @@ function createTableRow(
     event_id: overrides.event_id ?? "event-1",
     table_number: overrides.table_number,
     game_title: overrides.game_title ?? "Smash Bros",
+    game_rule_id: overrides.game_rule_id ?? null,
     status: overrides.status ?? "reserved",
     current_match_id:
       overrides.current_match_id === undefined ? "match-1" : overrides.current_match_id,
@@ -279,6 +280,7 @@ function buildRuntimeState(state: FakeState, participantId: string): Participant
           id: table.id,
           tableNumber: table.table_number,
           gameTitle: table.game_title,
+          ruleId: table.game_rule_id,
           status: table.status,
         }
       : null,

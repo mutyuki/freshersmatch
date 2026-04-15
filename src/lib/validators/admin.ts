@@ -45,6 +45,16 @@ export const adminUpdateTableGameTitleSchema = z
 
 export type AdminUpdateTableGameTitleInput = z.infer<typeof adminUpdateTableGameTitleSchema>;
 
+export const adminUpdateTableRuleSchema = z
+  .object({
+    tableId: z.string().trim().min(1),
+    title: z.string().trim().min(1).max(120),
+    body: z.string().trim().min(1),
+  })
+  .strict();
+
+export type AdminUpdateTableRuleInput = z.infer<typeof adminUpdateTableRuleSchema>;
+
 export const adminResolveMatchSchema = z.discriminatedUnion("resolutionType", [
   z
     .object({

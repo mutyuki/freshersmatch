@@ -113,6 +113,7 @@ function createTableRow(
     event_id: overrides.event_id ?? "event-1",
     table_number: overrides.table_number,
     game_title: overrides.game_title ?? "Smash Bros",
+    game_rule_id: overrides.game_rule_id ?? null,
     status: overrides.status ?? "in_use",
     current_match_id:
       overrides.current_match_id === undefined ? "match-1" : overrides.current_match_id,

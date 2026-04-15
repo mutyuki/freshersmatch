@@ -5,6 +5,11 @@ import {
   verifyParticipantSession,
 } from "@/lib/auth/participant-session";
 import type { ParticipantRuntimeState } from "@/lib/contracts/participant-runtime";
+import type {
+  CurrentTableGameRule,
+  GameRuleSummary,
+  TableGameRuleDetail,
+} from "@/lib/contracts/game-rules";
 import { getSupabaseAdminClient } from "@/lib/db/server";
 import type { ChipLedgerReason, Database } from "@/lib/db/types";
 import { AppError, DomainConflictError } from "@/lib/domain/errors";
@@ -16,6 +21,7 @@ import {
 type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
 type TableRow = Database["public"]["Tables"]["tables"]["Row"];
+type GameRuleRow = Database["public"]["Tables"]["game_rules"]["Row"];
 type ChipLedgerRow = Database["public"]["Tables"]["chip_ledger"]["Row"];
 type RegisterParticipantRpcRow =
   Database["public"]["Functions"]["register_participant_and_issue_session"]["Returns"][number];
@@ -66,10 +72,33 @@ type MatchesTableQuery = {
 type TablesTableQuery = {
   select(columns: string): {
     eq(
-      column: "id",
+      column: "id" | "event_id",
       value: string,
     ): {
       maybeSingle(): QueryResult<TableRow | null>;
+      limit(count: number): QueryResult<TableRow[] | null>;
+    };
+  };
+};
+
+type GameRulesTableQuery = {
+  select(columns: string): {
+    eq(column: "id" | "event_id", value: string): {
+      maybeSingle(): QueryResult<GameRuleRow | null>;
+      order?(
+        column: "updated_at" | "title",
+        options?: {
+          ascending?: boolean;
+        },
+      ): {
+        limit(count: number): QueryResult<GameRuleRow[] | null>;
+      };
+    };
+    in?(
+      column: "id",
+      values: string[],
+    ): {
+      limit(count: number): QueryResult<GameRuleRow[] | null>;
     };
   };
 };
@@ -88,6 +117,7 @@ type ParticipantServiceSupabaseClient = {
   from(table: "participants"): ParticipantsTableQuery;
   from(table: "matches"): MatchesTableQuery;
   from(table: "tables"): TablesTableQuery;
+  from(table: "game_rules"): GameRulesTableQuery;
   from(table: "chip_ledger"): ChipLedgerTableQuery;
   rpc(
     fn: "register_participant_and_issue_session",
@@ -171,6 +201,51 @@ async function fetchTableById(tableId: string): Promise<TableRow> {
   }
 
   return data;
+}
+
+async function fetchTablesByEventId(eventId: string): Promise<TableRow[]> {
+  const tables = getParticipantServiceSupabaseClient().from("tables");
+  const { data, error } = await tables.select("*").eq("event_id", eventId).limit(100);
+
+  if (error) {
+    throw new AppError("table_lookup_failed", "Failed to load event tables.", 500);
+  }
+
+  return (data ?? []).sort((left, right) => left.table_number - right.table_number);
+}
+
+async function fetchGameRuleById(ruleId: string): Promise<GameRuleRow> {
+  const gameRules = getParticipantServiceSupabaseClient().from("game_rules");
+  const { data, error } = await gameRules.select("*").eq("id", ruleId).maybeSingle();
+
+  if (error) {
+    throw new AppError("game_rule_lookup_failed", "Failed to load game rule.", 500);
+  }
+
+  if (!data) {
+    throw new AppError("game_rule_not_found", "Game rule was not found.", 404);
+  }
+
+  return data;
+}
+
+async function fetchGameRulesByIds(ruleIds: string[]): Promise<Map<string, GameRuleRow>> {
+  if (ruleIds.length === 0) {
+    return new Map();
+  }
+
+  const gameRules = getParticipantServiceSupabaseClient().from("game_rules");
+  const selectQuery = gameRules.select("*");
+  const { data, error } = await selectQuery.in?.("id", ruleIds).limit(100) ?? {
+    data: null,
+    error: { message: "Game rule id lookup is not supported." },
+  };
+
+  if (error) {
+    throw new AppError("game_rule_lookup_failed", "Failed to load game rules.", 500);
+  }
+
+  return new Map((data ?? []).map((rule) => [rule.id, rule]));
 }
 
 async function fetchResultDelta(matchId: string, participantId: string): Promise<number | null> {
@@ -261,12 +336,13 @@ async function buildParticipantRuntimeState(
     currentMatchId: participant.current_match_id,
     queuedAt: participant.queued_at,
     table: table
-      ? {
-          id: table.id,
-          tableNumber: table.table_number,
-          gameTitle: table.game_title,
-          status: table.status,
-        }
+        ? {
+            id: table.id,
+            tableNumber: table.table_number,
+            gameTitle: table.game_title,
+            ruleId: table.game_rule_id,
+            status: table.status,
+          }
       : null,
     match: match
       ? {
@@ -389,4 +465,79 @@ export async function heartbeatParticipant(params: { sessionToken: string }): Pr
   if (!data || data.length === 0) {
     throw new AppError("participant_not_found", "Participant was not found.", 500);
   }
+}
+
+function toGameRuleDetail(rule: GameRuleRow) {
+  return {
+    id: rule.id,
+    title: rule.title,
+    body: rule.body,
+    updatedAt: rule.updated_at,
+  };
+}
+
+export async function getParticipantCurrentRule(
+  participantId: string,
+): Promise<CurrentTableGameRule> {
+  const runtimeState = await getParticipantRuntimeState(participantId);
+
+  if (!runtimeState.table) {
+    throw new AppError("participant_table_not_found", "Participant is not assigned to a table.", 404);
+  }
+
+  if (!runtimeState.table.ruleId) {
+    throw new AppError("game_rule_not_found", "No game rule is configured for the current table.", 404);
+  }
+
+  const rule = await fetchGameRuleById(runtimeState.table.ruleId);
+
+  return {
+    tableId: runtimeState.table.id,
+    tableNumber: runtimeState.table.tableNumber,
+    gameTitle: runtimeState.table.gameTitle,
+    rule: toGameRuleDetail(rule),
+  };
+}
+
+export async function listParticipantGameRules(participantId: string): Promise<GameRuleSummary[]> {
+  const participant = await fetchParticipantById(participantId);
+  const tables = await fetchTablesByEventId(participant.event_id);
+  const ruleIds = tables
+    .map((table) => table.game_rule_id)
+    .filter((ruleId): ruleId is string => typeof ruleId === "string");
+  const rulesById = await fetchGameRulesByIds(ruleIds);
+
+  return tables
+    .filter((table) => table.game_rule_id && rulesById.has(table.game_rule_id))
+    .map((table) => ({
+      tableId: table.id,
+      tableNumber: table.table_number,
+      gameTitle: table.game_title,
+      ruleTitle: rulesById.get(table.game_rule_id as string)?.title ?? table.game_title,
+    }));
+}
+
+export async function getParticipantRuleByTableId(
+  participantId: string,
+  tableId: string,
+): Promise<TableGameRuleDetail> {
+  const participant = await fetchParticipantById(participantId);
+  const table = await fetchTableById(tableId);
+
+  if (table.event_id !== participant.event_id) {
+    throw new AppError("table_not_found", "Table was not found.", 404);
+  }
+
+  if (!table.game_rule_id) {
+    throw new AppError("game_rule_not_found", "No game rule is configured for this table.", 404);
+  }
+
+  const rule = await fetchGameRuleById(table.game_rule_id);
+
+  return {
+    tableId: table.id,
+    tableNumber: table.table_number,
+    gameTitle: table.game_title,
+    rule: toGameRuleDetail(rule),
+  };
 }
