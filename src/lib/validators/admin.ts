@@ -36,6 +36,15 @@ export const adminReleaseTableHoldSchema = confirmTableActionSchema;
 
 export type AdminReleaseTableHoldInput = z.infer<typeof adminReleaseTableHoldSchema>;
 
+export const adminUpdateTableGameTitleSchema = z
+  .object({
+    tableId: z.string().trim().min(1),
+    gameTitle: z.string().trim().min(1).max(120),
+  })
+  .strict();
+
+export type AdminUpdateTableGameTitleInput = z.infer<typeof adminUpdateTableGameTitleSchema>;
+
 export const adminResolveMatchSchema = z.discriminatedUnion("resolutionType", [
   z
     .object({

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAdminTablesRealtime } from "@/hooks/useAdminTablesRealtime";
 import type { AdminTableListItem } from "@/lib/contracts/admin-tables";
 import type { TableStatus } from "@/lib/domain/table-status";
@@ -83,11 +84,19 @@ function TableStatusBadge(props: { status: TableStatus }): JSX.Element {
 
 export function TableGrid(props: TableGridProps): JSX.Element {
   const [data, setData] = useState(props.initialData);
+  const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(props.initialData.map((table) => [table.tableId, table.gameTitle])),
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [submittingTableId, setSubmittingTableId] = useState<string | null>(null);
+  const [updatingTitleTableId, setUpdatingTitleTableId] = useState<string | null>(null);
+  const [titleUpdateError, setTitleUpdateError] = useState<{
+    tableId: string;
+    message: string;
+  } | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -100,6 +109,10 @@ export function TableGrid(props: TableGridProps): JSX.Element {
   useEffect(() => {
     setData(props.initialData);
   }, [props.initialData]);
+
+  useEffect(() => {
+    setTitleDrafts(Object.fromEntries(data.map((table) => [table.tableId, table.gameTitle])));
+  }, [data]);
 
   const refresh = useCallback(async (): Promise<void> => {
     if (isMountedRef.current) {
@@ -207,6 +220,58 @@ export function TableGrid(props: TableGridProps): JSX.Element {
     }
   }, [actionState, refresh, selectedTable]);
 
+  const updateGameTitle = useCallback(
+    async (tableId: string): Promise<void> => {
+      const gameTitle = (titleDrafts[tableId] ?? "").trim();
+
+      if (gameTitle.length === 0) {
+        setTitleUpdateError({
+          tableId,
+          message: "ゲームタイトルを入力してください。",
+        });
+        return;
+      }
+
+      setUpdatingTitleTableId(tableId);
+      setTitleUpdateError(null);
+
+      try {
+        const response = await fetch("/api/admin/table/game-title", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tableId,
+            gameTitle,
+          }),
+        });
+
+        const payload = (await response.json().catch(() => null)) as MutationResponse | null;
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.error?.message ??
+              "ゲームタイトルの更新に失敗しました。少し待ってから再度お試しください。",
+          );
+        }
+
+        await refresh();
+      } catch (error) {
+        setTitleUpdateError({
+          tableId,
+          message:
+            error instanceof Error
+              ? error.message
+              : "ゲームタイトルの更新に失敗しました。少し待ってから再度お試しください。",
+        });
+      } finally {
+        setUpdatingTitleTableId(null);
+      }
+    },
+    [refresh, titleDrafts],
+  );
+
   return (
     <>
       <section className="rounded-[1.8rem] border border-border bg-card p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.95)] ">
@@ -237,6 +302,12 @@ export function TableGrid(props: TableGridProps): JSX.Element {
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {data.map((table) => {
             const isSubmitting = submittingTableId === table.tableId;
+            const isUpdatingTitle = updatingTitleTableId === table.tableId;
+            const titleDraft = titleDrafts[table.tableId] ?? table.gameTitle;
+            const normalizedTitleDraft = titleDraft.trim();
+            const canSaveTitle = normalizedTitleDraft.length > 0 && normalizedTitleDraft !== table.gameTitle;
+            const titleErrorMessage =
+              titleUpdateError?.tableId === table.tableId ? titleUpdateError.message : null;
             const canHold = table.status === "available";
             const canReleaseHold = table.status === "admin_hold";
             const canForceRelease =
@@ -260,6 +331,44 @@ export function TableGrid(props: TableGridProps): JSX.Element {
                   </div>
                   <TableStatusBadge status={table.status} />
                 </div>
+
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Game title</p>
+                  <div className="flex gap-2">
+                    <Input
+                      aria-label={`卓 ${table.tableNumber} のゲームタイトル`}
+                      value={titleDraft}
+                      onChange={(event) => {
+                        const nextGameTitle = event.currentTarget.value;
+
+                        setTitleDrafts((previous) => ({
+                          ...previous,
+                          [table.tableId]: nextGameTitle,
+                        }));
+
+                        if (titleUpdateError?.tableId === table.tableId) {
+                          setTitleUpdateError(null);
+                        }
+                      }}
+                      disabled={isUpdatingTitle || isSubmitting}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isSubmitting || isUpdatingTitle || !canSaveTitle}
+                      onClick={() => void updateGameTitle(table.tableId)}
+                    >
+                      {isUpdatingTitle ? "保存中..." : "タイトル保存"}
+                    </Button>
+                  </div>
+                </div>
+
+                {titleErrorMessage ? (
+                  <Alert className="mt-3 border-destructive/20 bg-destructive/10 text-destructive">
+                    <AlertTriangle className="size-4" />
+                    <AlertDescription>{titleErrorMessage}</AlertDescription>
+                  </Alert>
+                ) : null}
 
                 <div className="mt-5 space-y-3 text-sm text-muted-foreground">
                   <div>

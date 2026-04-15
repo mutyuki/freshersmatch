@@ -49,10 +49,27 @@ type TableQuery<TRow> = {
   select(columns: string): SelectQuery<TRow>;
 };
 
+type TablesUpdateQuery = {
+  eq(
+    column: "id",
+    value: string,
+  ): {
+    select(columns: string): {
+      maybeSingle(): QueryResult<TableRow | null>;
+    };
+  };
+};
+
+type TablesQuery = TableQuery<TableRow> & {
+  update(
+    values: Pick<Database["public"]["Tables"]["tables"]["Update"], "game_title">,
+  ): TablesUpdateQuery;
+};
+
 type AdminMatchSupabaseClient = {
   from(table: "participants"): TableQuery<ParticipantRow>;
   from(table: "matches"): TableQuery<MatchRow>;
-  from(table: "tables"): TableQuery<TableRow>;
+  from(table: "tables"): TablesQuery;
   from(table: "admin_users"): TableQuery<AdminUserRow>;
   rpc(
     fn: "force_release_table",
@@ -194,6 +211,20 @@ function getParticipantNickname(
 function getMatchParticipantIds(match: MatchRow): string[] {
   return [match.player1_participant_id, match.player2_participant_id].filter(
     (participantId): participantId is string => typeof participantId === "string",
+  );
+}
+
+function normalizeTableGameTitle(value: string): string {
+  const normalized = value.trim();
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  throw new AppError(
+    "table_game_title_required",
+    "Table game title is required.",
+    400,
   );
 }
 
@@ -351,6 +382,44 @@ export async function listAdminTables(eventId: string): Promise<AdminTableListIt
         : null,
     };
   });
+}
+
+export async function updateTableGameTitle(params: {
+  tableId: string;
+  gameTitle: string;
+}): Promise<AdminMatchMutationResult> {
+  const gameTitle = normalizeTableGameTitle(params.gameTitle);
+  const table = await fetchTableById(params.tableId);
+  const currentMatch = table.current_match_id ? await fetchMatchById(table.current_match_id) : null;
+
+  const tables = getAdminMatchSupabaseClient().from("tables");
+  const { data, error } = await tables
+    .update({
+      game_title: gameTitle,
+    })
+    .eq("id", table.id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw new AppError(
+      "table_game_title_update_failed",
+      "Failed to update table game title.",
+      500,
+    );
+  }
+
+  if (!data) {
+    throw new AppError("table_not_found", "Table was not found.", 404);
+  }
+
+  return {
+    eventId: table.event_id,
+    matchId: currentMatch?.id ?? null,
+    tableId: table.id,
+    participantIds: currentMatch ? getMatchParticipantIds(currentMatch) : [],
+    includeRanking: false,
+  };
 }
 
 export async function forceReleaseTable(params: {

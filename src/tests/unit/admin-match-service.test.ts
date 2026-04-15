@@ -20,6 +20,7 @@ import {
   listAdminTables,
   releaseTableHold,
   resolveMatchByAdmin,
+  updateTableGameTitle,
 } from "@/lib/services/admin-match-service";
 
 type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
@@ -236,6 +237,94 @@ describe("admin match service", () => {
         heldByAdminDisplayName: "Desk A",
       },
     ]);
+  });
+
+  it("updates a table game title and returns affected participants", async () => {
+    from.mockImplementation((tableName: string) => {
+      if (tableName === "tables") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: createTableRow({
+                  id: "table-1",
+                  event_id: "event-1",
+                  table_number: 2,
+                  game_title: "SF6",
+                  current_match_id: "match-1",
+                  status: "in_use",
+                }),
+                error: null,
+              }),
+            }),
+          }),
+          update: (values: { game_title: string }) => ({
+            eq: () => ({
+              select: () => ({
+                maybeSingle: async () => ({
+                  data: createTableRow({
+                    id: "table-1",
+                    event_id: "event-1",
+                    table_number: 2,
+                    game_title: values.game_title,
+                    current_match_id: "match-1",
+                    status: "in_use",
+                  }),
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+
+      return {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({
+              data:
+                tableName === "matches"
+                  ? createMatchRow({
+                      id: "match-1",
+                      event_id: "event-1",
+                      player1_participant_id: "participant-1",
+                      player2_participant_id: "participant-2",
+                      status: "in_progress",
+                    })
+                  : null,
+              error: null,
+            }),
+          }),
+        }),
+      };
+    });
+
+    await expect(
+      updateTableGameTitle({
+        tableId: "table-1",
+        gameTitle: " Guilty Gear Strive ",
+      }),
+    ).resolves.toEqual({
+      eventId: "event-1",
+      matchId: "match-1",
+      tableId: "table-1",
+      participantIds: ["participant-1", "participant-2"],
+      includeRanking: false,
+    });
+  });
+
+  it("rejects empty game titles when updating a table", async () => {
+    await expect(
+      updateTableGameTitle({
+        tableId: "table-1",
+        gameTitle: "   ",
+      }),
+    ).rejects.toMatchObject({
+      code: "table_game_title_required",
+      status: 400,
+    });
+
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("returns affected entities for force release and hold actions", async () => {

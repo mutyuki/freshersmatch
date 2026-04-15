@@ -8,6 +8,7 @@ const {
   forceReleaseTable,
   holdTable,
   releaseTableHold,
+  updateTableGameTitle,
   resolveMatchByAdmin,
   startStaffMatch,
   resolveStaffMatch,
@@ -20,6 +21,7 @@ const {
   forceReleaseTable: vi.fn(),
   holdTable: vi.fn(),
   releaseTableHold: vi.fn(),
+  updateTableGameTitle: vi.fn(),
   resolveMatchByAdmin: vi.fn(),
   startStaffMatch: vi.fn(),
   resolveStaffMatch: vi.fn(),
@@ -40,6 +42,7 @@ vi.mock("@/lib/services/admin-match-service", () => ({
   forceReleaseTable,
   holdTable,
   releaseTableHold,
+  updateTableGameTitle,
   resolveMatchByAdmin,
 }));
 
@@ -59,6 +62,7 @@ import { POST as resolveStaffMatchPost } from "@/app/api/admin/staff-match/resol
 import { POST as startStaffMatchPost } from "@/app/api/admin/staff-match/start/route";
 import { GET as getAdminTables } from "@/app/api/admin/tables/route";
 import { POST as forceReleaseTablePost } from "@/app/api/admin/table/force-release/route";
+import { POST as updateTableGameTitlePost } from "@/app/api/admin/table/game-title/route";
 import { POST as holdTablePost } from "@/app/api/admin/table/hold/route";
 import { POST as releaseTableHoldPost } from "@/app/api/admin/table/release-hold/route";
 
@@ -180,6 +184,60 @@ describe("admin match and table api routes", () => {
       scopes: ["admin"],
       tableId: "table-1",
     });
+  });
+
+  it("publishes participant, match, and admin invalidation for table title updates with active match", async () => {
+    updateTableGameTitle.mockResolvedValue({
+      eventId: "event-1",
+      matchId: "match-1",
+      tableId: "table-1",
+      participantIds: ["participant-1", "participant-2"],
+      includeRanking: false,
+    });
+
+    await updateTableGameTitlePost(
+      new Request("http://localhost/api/admin/table/game-title", {
+        method: "POST",
+        body: JSON.stringify({
+          tableId: "table-1",
+          gameTitle: "Tekken 8",
+        }),
+      }),
+    );
+
+    expect(updateTableGameTitle).toHaveBeenCalledWith({
+      tableId: "table-1",
+      gameTitle: "Tekken 8",
+    });
+    expect(publishInvalidation).toHaveBeenCalledWith({
+      eventId: "event-1",
+      scopes: ["participant", "match", "admin"],
+      participantIds: ["participant-1", "participant-2"],
+      matchId: "match-1",
+      tableId: "table-1",
+    });
+  });
+
+  it("returns invalid request for empty table game title payload", async () => {
+    const response = await updateTableGameTitlePost(
+      new Request("http://localhost/api/admin/table/game-title", {
+        method: "POST",
+        body: JSON.stringify({
+          tableId: "table-1",
+          gameTitle: "   ",
+        }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "invalid_request",
+        message: "Request validation failed.",
+      },
+    });
+    expect(response.status).toBe(400);
+    expect(updateTableGameTitle).not.toHaveBeenCalled();
+    expect(publishInvalidation).not.toHaveBeenCalled();
   });
 
   it("publishes participant, match, and admin invalidation for force release when a match is affected", async () => {
