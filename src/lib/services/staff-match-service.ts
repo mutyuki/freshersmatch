@@ -9,6 +9,8 @@ type TableRow = Database["public"]["Tables"]["tables"]["Row"];
 type StartStaffMatchRpcArgs = Database["public"]["Functions"]["start_staff_match"]["Args"];
 type StartStaffMatchRpcRow =
   Database["public"]["Functions"]["start_staff_match"]["Returns"][number];
+type ReadyMatchRpcArgs = Database["public"]["Functions"]["ready_match"]["Args"];
+type ReadyMatchRpcRow = Database["public"]["Functions"]["ready_match"]["Returns"][number];
 type ResolveStaffMatchRpcArgs = Database["public"]["Functions"]["resolve_staff_match"]["Args"];
 type ResolveStaffMatchRpcRow =
   Database["public"]["Functions"]["resolve_staff_match"]["Returns"][number];
@@ -37,6 +39,7 @@ type StaffMatchSupabaseClient = {
   from(table: "matches"): TableQuery<MatchRow>;
   from(table: "tables"): TableQuery<TableRow>;
   rpc(fn: "start_staff_match", args: StartStaffMatchRpcArgs): RpcResult<StartStaffMatchRpcRow>;
+  rpc(fn: "ready_match", args: ReadyMatchRpcArgs): RpcResult<ReadyMatchRpcRow>;
   rpc(
     fn: "resolve_staff_match",
     args: ResolveStaffMatchRpcArgs,
@@ -161,6 +164,46 @@ function normalizeResolveStaffMatchError(message: string): never {
   throw new AppError("staff_match_resolution_failed", "Failed to resolve the staff match.", 500);
 }
 
+function canRetryResolveByAutoReady(params: {
+  match: MatchRow;
+  message: string;
+}): boolean {
+  if (!params.match.is_staff_match) {
+    return false;
+  }
+
+  if (params.match.status !== "reserved" && params.match.status !== "awaiting_ready") {
+    return false;
+  }
+
+  return (
+    params.message.includes("cannot be resolved") ||
+    params.message.includes("not resolvable") ||
+    params.message.includes("positive agreed bet amount")
+  );
+}
+
+function normalizeAutoReadyForResolveError(message: string): never {
+  if (message.includes("Participant not found") || message.includes("Match not found")) {
+    throw new AppError("match_not_found", "Match was not found.", 404);
+  }
+
+  if (
+    message.includes("not readyable") ||
+    message.includes("readyable status") ||
+    message.includes("is not in reserved status") ||
+    message.includes("Only the participant can ready") ||
+    message.includes("bet must be positive")
+  ) {
+    throw new DomainConflictError(
+      "staff_match_resolution_conflict",
+      "Staff match cannot be resolved from the current state.",
+    );
+  }
+
+  throw new AppError("staff_match_resolution_failed", "Failed to resolve the staff match.", 500);
+}
+
 export async function startStaffMatch(params: {
   adminUserId: string;
   participantId: string;
@@ -210,11 +253,29 @@ export async function resolveStaffMatch(params: {
 }): Promise<StaffMatchMutationResult> {
   const match = await fetchMatchById(params.matchId);
 
-  const { data, error } = await getStaffMatchSupabaseClient().rpc("resolve_staff_match", {
+  const supabase = getStaffMatchSupabaseClient();
+  let { data, error } = await supabase.rpc("resolve_staff_match", {
     p_admin_user_id: params.adminUserId,
     p_match_id: params.matchId,
     p_participant_won: params.participantWon,
   });
+
+  if (error && canRetryResolveByAutoReady({ match, message: error.message })) {
+    const readyResult = await supabase.rpc("ready_match", {
+      p_participant_id: match.player1_participant_id,
+      p_match_id: match.id,
+    });
+
+    if (readyResult.error) {
+      normalizeAutoReadyForResolveError(readyResult.error.message);
+    }
+
+    ({ data, error } = await supabase.rpc("resolve_staff_match", {
+      p_admin_user_id: params.adminUserId,
+      p_match_id: params.matchId,
+      p_participant_won: params.participantWon,
+    }));
+  }
 
   if (error) {
     normalizeResolveStaffMatchError(error.message);

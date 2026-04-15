@@ -221,6 +221,74 @@ describe("staff match service", () => {
     });
   });
 
+  it("auto-readies reserved staff matches before resolving", async () => {
+    from.mockImplementation(() => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({
+            data: createMatchRow({
+              id: "match-1",
+              event_id: "event-1",
+              table_id: "table-4",
+              player1_participant_id: "participant-1",
+              status: "reserved",
+            }),
+            error: null,
+          }),
+        }),
+      }),
+    }));
+    rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: "Staff match is not resolvable from status: reserved" },
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            match_status: "in_progress",
+            participant_status: "playing",
+            agreed_bet_amount: 3,
+            started_at: "2026-04-13T09:05:00.000Z",
+          },
+        ],
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: [{ match_status: "completed" }],
+        error: null,
+      });
+
+    await expect(
+      resolveStaffMatch({
+        adminUserId: "admin-1",
+        matchId: "match-1",
+        participantWon: false,
+      }),
+    ).resolves.toEqual({
+      eventId: "event-1",
+      matchId: "match-1",
+      tableId: "table-4",
+      participantIds: ["participant-1"],
+      includeRanking: true,
+    });
+
+    expect(rpc).toHaveBeenNthCalledWith(1, "resolve_staff_match", {
+      p_admin_user_id: "admin-1",
+      p_match_id: "match-1",
+      p_participant_won: false,
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "ready_match", {
+      p_participant_id: "participant-1",
+      p_match_id: "match-1",
+    });
+    expect(rpc).toHaveBeenNthCalledWith(3, "resolve_staff_match", {
+      p_admin_user_id: "admin-1",
+      p_match_id: "match-1",
+      p_participant_won: false,
+    });
+  });
+
   it("normalizes non-staff-match resolution conflicts", async () => {
     from.mockImplementation(() => ({
       select: () => ({
